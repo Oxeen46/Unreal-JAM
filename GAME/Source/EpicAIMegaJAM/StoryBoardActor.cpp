@@ -383,18 +383,21 @@ void AStoryBoardActor::Interact_Implementation(AActor* Interactor)
 
 void AStoryBoardActor::EnterBoard(APlayerController* PC)
 {
+	if (!PC) return;
+
 	ActivePC = PC;
 	bActive = true;
 
-	BuildNotes();
-	RefreshLayout();
-	RefreshPins();
-	StatusText->SetText(FText::GetEmpty());
-	HintText->SetHiddenInGame(false);
+	if (APawn* Pawn = PC->GetPawn())
+	{
+		HiddenPawn = Pawn;
+	}
+
+	// Only start the fade. Everything else waits until black.
+	StartScreenFadeOut();
 
 	PC->SetIgnoreMoveInput(true);
 	PC->SetIgnoreLookInput(true);
-	PC->SetViewTargetWithBlend(this, BlendTime, VTBlend_Cubic);
 
 	FInputModeGameAndUI Mode;
 	Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
@@ -405,7 +408,8 @@ void AStoryBoardActor::EnterBoard(APlayerController* PC)
 	bPrevLMB   = PC->IsInputKeyDown(EKeys::LeftMouseButton);
 	bPrevEnter = PC->IsInputKeyDown(EKeys::Enter);
 	bPrevBack  = PC->IsInputKeyDown(EKeys::BackSpace);
-	InputReadyTime = GetWorld()->GetTimeSeconds() + BlendTime;
+
+	InputReadyTime = GetWorld()->GetTimeSeconds() + 0.7f; // cover the whole sequence
 
 	SetActorTickEnabled(true);
 }
@@ -413,12 +417,12 @@ void AStoryBoardActor::EnterBoard(APlayerController* PC)
 void AStoryBoardActor::ExitBoard()
 {
 	if (!bActive || !ActivePC) return;
+
 	bActive = false;
 	DraggedIndex = INDEX_NONE;
 
-	ActivePC->SetViewTargetWithBlend(ActivePC->GetPawn(), BlendTime, VTBlend_Cubic);
-	GetWorldTimerManager().SetTimer(
-		ExitTimer, this, &AStoryBoardActor::FinishExit, BlendTime, false);
+	// Start fade to black – the rest happens inside OnFadeOutFinishedForExit
+	StartScreenFadeOutForExit();
 }
 
 void AStoryBoardActor::FinishExit()
@@ -431,6 +435,7 @@ void AStoryBoardActor::FinishExit()
 		ActivePC->SetShowMouseCursor(false);
 		ActivePC = nullptr;
 	}
+
 	DestroyNotes();
 	HintText->SetHiddenInGame(true);
 	SetActorTickEnabled(false);
@@ -560,6 +565,15 @@ void AStoryBoardActor::TryRewrite()
 		return;
 	}
 
+	for (const FStoryBoardSlot& Slot : Board->Slots)
+	{
+		const FGameplayTag UsedClue = Story->GetPlacedClue(Slot.SlotTag);
+		if (UsedClue.IsValid())
+		{
+			Story->RemoveCollectedClue(UsedClue);   // <-- you need this function
+			Story->ClearSlot(Slot.SlotTag);          // optional but tidy
+		}
+	}
 	// Add to confirmed row if new
 	AddConfirmedBlock(Index);
 
@@ -571,4 +585,101 @@ void AStoryBoardActor::TryRewrite()
 	StatusText->SetText(Board->Storylines[Index].Title);
 
 	ExitBoard();
+}
+// ============================================================
+// Screen Fade System (correct order)
+// ============================================================
+
+void AStoryBoardActor::StartScreenFadeOut()
+{
+	if (!ActivePC || !ActivePC->PlayerCameraManager) return;
+
+	// Make sure no previous fade is stuck
+	ActivePC->PlayerCameraManager->StopCameraFade();
+
+	ActivePC->PlayerCameraManager->StartCameraFade(
+		0.f, 1.f, 0.20f, FLinearColor::Black, false, true);
+
+	GetWorldTimerManager().ClearTimer(FadeTimer);
+	GetWorldTimerManager().SetTimer(
+		FadeTimer, this, &AStoryBoardActor::OnFadeOutFinished, 0.21f, false);
+}
+
+void AStoryBoardActor::OnFadeOutFinished()
+{
+	if (!ActivePC) return;
+
+	// === Everything happens while the screen is black ===
+
+	// 1. Hide player
+	if (APawn* Pawn = HiddenPawn.Get())
+	{
+		Pawn->SetActorHiddenInGame(true);
+	}
+
+	// 2. Instant camera cut
+	ActivePC->SetViewTarget(this);
+
+	// 3. Build the board content
+	BuildNotes();
+	RefreshLayout();
+	RefreshPins();
+	StatusText->SetText(FText::GetEmpty());
+	HintText->SetHiddenInGame(false);
+
+	// 4. Short hold in black, then fade in
+	GetWorldTimerManager().SetTimer(
+		FadeTimer, this, &AStoryBoardActor::StartScreenFadeIn, 0.12f, false);
+}
+
+void AStoryBoardActor::StartScreenFadeIn()
+{
+	if (!ActivePC || !ActivePC->PlayerCameraManager) return;
+
+	ActivePC->PlayerCameraManager->StopCameraFade(); // safety
+	ActivePC->PlayerCameraManager->StartCameraFade(
+		1.f, 0.f, 0.28f, FLinearColor::Black, false, false);
+}
+
+void AStoryBoardActor::StartScreenFadeOutForExit()
+{
+	if (!ActivePC || !ActivePC->PlayerCameraManager) return;
+
+	ActivePC->PlayerCameraManager->StopCameraFade();
+
+	ActivePC->PlayerCameraManager->StartCameraFade(
+		0.f, 1.f, 0.20f, FLinearColor::Black, false, true);
+
+	GetWorldTimerManager().ClearTimer(FadeTimer);
+	GetWorldTimerManager().SetTimer(
+		FadeTimer, this, &AStoryBoardActor::OnFadeOutFinishedForExit, 0.21f, false);
+}
+
+void AStoryBoardActor::OnFadeOutFinishedForExit()
+{
+	// Keep the pointer before FinishExit clears it
+	APlayerController* PC = ActivePC;
+
+	// Restore player + camera while black
+	if (APawn* Pawn = HiddenPawn.Get())
+	{
+		Pawn->SetActorHiddenInGame(false);
+	}
+	HiddenPawn.Reset();
+
+	if (PC && PC->GetPawn())
+	{
+		PC->SetViewTarget(PC->GetPawn());
+	}
+
+	// Normal exit cleanup
+	FinishExit();
+
+	// Fade back in
+	if (PC && PC->PlayerCameraManager)
+	{
+		PC->PlayerCameraManager->StopCameraFade();
+		PC->PlayerCameraManager->StartCameraFade(
+			1.f, 0.f, 0.28f, FLinearColor::Black, false, false);
+	}
 }

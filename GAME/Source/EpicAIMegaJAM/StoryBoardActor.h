@@ -87,7 +87,7 @@ private:
 
 	// Logic
 	void TryRewrite();
-	void ActivateStoryline(int32 Index); // INDEX_NONE = None
+	void ActivateStoryline(int32 Index);
 	int32 GetActiveStoryline() const;
 
 	// Block row
@@ -95,6 +95,13 @@ private:
 	void HandleBlockClick(int32 StorylineIndex);
 
 	UStoryStateSubsystem* GetStory() const;
+
+	// Screen fade helpers
+	void StartScreenFadeOut();
+	void StartScreenFadeIn();
+	void OnFadeOutFinished();
+	void StartScreenFadeOutForExit();
+	void OnFadeOutFinishedForExit();
 
 	// Components
 	UPROPERTY(VisibleAnywhere) TObjectPtr<USceneComponent> SceneRoot;
@@ -112,6 +119,8 @@ private:
 	UPROPERTY() TObjectPtr<APlayerController> ActivePC;
 
 	FTimerHandle ExitTimer;
+	FTimerHandle FadeTimer;
+
 	bool bActive = false;
 	bool bPrevLMB = false;
 	bool bPrevEnter = false;
@@ -119,5 +128,7 @@ private:
 	int32 DraggedIndex = INDEX_NONE;
 	float InputReadyTime = 0.f;
 	float BoardWidth = 600.f;
-	int32 ActiveStoryline = INDEX_NONE; // currently chosen reality
+	int32 ActiveStoryline = INDEX_NONE;
+
+	TWeakObjectPtr<APawn> HiddenPawn;
 };

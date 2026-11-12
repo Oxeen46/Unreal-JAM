@@ -129,3 +129,14 @@ int32 UStoryStateSubsystem::CommitBoard(const UStoryBoardData* Board)
 	CommittedStorylines.Add(Key, Match);
 	return Match;
 }
+
+void UStoryStateSubsystem::RemoveCollectedClue(FGameplayTag Clue)
+{
+	CollectedClues.Remove(Clue);          // or whatever your container is called
+	// also clear any placement that still references it, just in case
+	for (auto& Pair : PlacedClues)
+	{
+		if (Pair.Value == Clue)
+			Pair.Value = FGameplayTag();
+	}
+}

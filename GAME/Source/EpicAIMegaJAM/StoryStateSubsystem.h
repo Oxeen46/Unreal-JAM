@@ -62,6 +62,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category="Story")
 	FOnBoardChanged OnBoardChanged;
+	
+	UFUNCTION(BlueprintCallable, Category = "Story")
+	void RemoveCollectedClue(FGameplayTag Clue);
 
 private:
 	UPROPERTY()
