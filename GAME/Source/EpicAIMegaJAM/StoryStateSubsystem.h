@@ -28,7 +28,10 @@ public:
 
 	// ---- Collected clues ----
 	UFUNCTION(BlueprintCallable, Category="Story")
-	void CollectClue(FGameplayTag Clue);
+	void CollectClue(FGameplayTag Clue, const FText& Title);
+
+	UFUNCTION(BlueprintPure, Category="Story")
+	FText GetClueTitle(FGameplayTag Clue) const;
 
 	UFUNCTION(BlueprintPure, Category="Story")
 	bool HasClue(FGameplayTag Clue) const;
@@ -50,8 +53,12 @@ public:
 	FGameplayTag GetPlacedClue(FGameplayTag Slot) const;
 
 	// Returns true and sets the board's result facts if every slot is correct
+	// Returns the index of the storyline that was applied, or -1 if the board doesn't fit any
 	UFUNCTION(BlueprintCallable, Category="Story")
-	bool CommitBoard(const UStoryBoardData* Board);
+	int32 CommitBoard(const UStoryBoardData* Board);
+
+	UFUNCTION(BlueprintPure, Category="Story")
+	int32 GetCommittedStoryline(const UStoryBoardData* Board) const;
 
 	UPROPERTY(BlueprintAssignable, Category="Story")
 	FOnBoardChanged OnBoardChanged;
@@ -62,6 +69,12 @@ private:
 
 	UPROPERTY()
 	TArray<FGameplayTag> CollectedClues;
+	
+	UPROPERTY()
+	TMap<FGameplayTag, FText> ClueTitles;
+
+	UPROPERTY()
+	TMap<FString, int32> CommittedStorylines; // board asset -> storyline currently applied
 
 	UPROPERTY()
 	TMap<FGameplayTag, FGameplayTag> PlacedClues; // slot -> clue

@@ -18,7 +18,7 @@ void AClueActor::Interact_Implementation(AActor* Interactor)
 	{
 		if (UStoryStateSubsystem* Story = GI->GetSubsystem<UStoryStateSubsystem>())
 		{
-			Story->CollectClue(ClueFact);
+			Story->CollectClue(ClueFact, ClueTitle);
 		}
 	}
 
@@ -32,4 +32,8 @@ void AClueActor::Interact_Implementation(AActor* Interactor)
 	{
 		Destroy();
 	}
+}
+FText AClueActor::GetInteractionPrompt_Implementation(AActor* Interactor) const
+{
+	return InteractionText;
 }

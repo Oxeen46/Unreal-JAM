@@ -2,21 +2,15 @@
 #include "StoryBoardData.h"
 #include "StoryBoardStation.h"
 #include "StoryStateSubsystem.h"
+#include "ClueNoteWidget.h"
+#include "BoardSlotWidget.h"
 #include "Components/VerticalBox.h"
 #include "Components/HorizontalBox.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
-#include "Components/ComboBoxString.h"
-#include "Blueprint/WidgetTree.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
-
-static FString ShortName(const FGameplayTag& Tag)
-{
-	const FString Full = Tag.ToString();
-	int32 Idx = INDEX_NONE;
-	return Full.FindLastChar('.', Idx) ? Full.Mid(Idx + 1) : Full;
-}
+#include "TimerManager.h"
 
 static UStoryStateSubsystem* GetStory(const UObject* Ctx)
 {
@@ -32,70 +26,77 @@ void UStoryBoardWidget::NativeOnInitialized()
 	CloseButton->OnClicked.AddDynamic(this, &UStoryBoardWidget::HandleClose);
 }
 
+void UStoryBoardWidget::NativeDestruct()
+{
+	if (UStoryStateSubsystem* Story = GetStory(this))
+	{
+		Story->OnBoardChanged.RemoveDynamic(this, &UStoryBoardWidget::HandleBoardChanged);
+	}
+	Super::NativeDestruct();
+}
+
 void UStoryBoardWidget::InitBoard(UStoryBoardData* InBoard, AStoryBoardStation* InStation)
 {
 	Board = InBoard;
 	Station = InStation;
 
-	SlotList->ClearChildren();
-	Combos.Reset();
-	OptionToClue.Reset();
-
-	UStoryStateSubsystem* Story = GetStory(this);
-	if (!Board || !Story) return;
-
-	if (TitleText) TitleText->SetText(Board->SceneTitle);
+	if (TitleText && Board) TitleText->SetText(Board->SceneTitle);
 	if (ResultText) ResultText->SetText(FText::GetEmpty());
 
-	const TArray<FGameplayTag> Clues = Story->GetCollectedClues();
-	for (const FGameplayTag& Clue : Clues)
+	if (UStoryStateSubsystem* Story = GetStory(this))
 	{
-		OptionToClue.Add(ShortName(Clue), Clue);
+		Story->OnBoardChanged.AddUniqueDynamic(this, &UStoryBoardWidget::HandleBoardChanged);
 	}
-	
+
+	RebuildAll();
+}
+
+void UStoryBoardWidget::HandleBoardChanged()
+{
+	// Wait one tick so we don't rebuild widgets in the middle of a drop
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimerForNextTick(this, &UStoryBoardWidget::RebuildAll);
+	}
+}
+
+void UStoryBoardWidget::RebuildAll()
+{
+	UStoryStateSubsystem* Story = GetStory(this);
+	if (!Board || !Story || !NoteWidgetClass || !SlotWidgetClass) return;
+
+	SlotList->ClearChildren();
+	ClueTray->ClearChildren();
+
+	TSet<FGameplayTag> Placed;
+
 	for (const FStoryBoardSlot& BoardSlot : Board->Slots)
 	{
-		UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>();
-		UTextBlock* Label = WidgetTree->ConstructWidget<UTextBlock>();
-		Label->SetText(BoardSlot.Label);
+		UBoardSlotWidget* SlotWidget = CreateWidget<UBoardSlotWidget>(this, SlotWidgetClass);
+		if (!SlotWidget) continue;
 
-		UComboBoxString* Combo = WidgetTree->ConstructWidget<UComboBoxString>();
-		Combo->AddOption(TEXT("(empty)"));
-		for (const FGameplayTag& Clue : Clues)
-		{
-			Combo->AddOption(ShortName(Clue));
-		}
+		const FGameplayTag PlacedClue = Story->GetPlacedClue(BoardSlot.SlotTag);
+		SlotWidget->InitSlot(BoardSlot.SlotTag, BoardSlot.Label, PlacedClue);
+		SlotList->AddChildToVerticalBox(SlotWidget);
 
-		const FGameplayTag Placed = Story->GetPlacedClue(BoardSlot.SlotTag);
-		Combo->SetSelectedOption(Placed.IsValid() ? ShortName(Placed) : TEXT("(empty)"));
+		if (PlacedClue.IsValid()) Placed.Add(PlacedClue);
+	}
 
-		Row->AddChildToHorizontalBox(Label);
-		Row->AddChildToHorizontalBox(Combo);
-		SlotList->AddChildToVerticalBox(Row);
-		Combos.Add(Combo);
+	for (const FGameplayTag& Clue : Story->GetCollectedClues())
+	{
+		if (Placed.Contains(Clue)) continue;
+
+		UClueNoteWidget* Note = CreateWidget<UClueNoteWidget>(this, NoteWidgetClass);
+		if (!Note) continue;
+
+		Note->SetClue(Clue);
+		ClueTray->AddChildToHorizontalBox(Note);
 	}
 }
 
 void UStoryBoardWidget::HandleCommit()
 {
-	UStoryStateSubsystem* Story = GetStory(this);
-	if (!Board || !Station || !Story) return;
-
-	// Put whatever is selected into the slots
-	for (int32 i = 0; i < Board->Slots.Num() && i < Combos.Num(); ++i)
-	{
-		const FGameplayTag SlotTag = Board->Slots[i].SlotTag;
-		const FString Selected = Combos[i]->GetSelectedOption();
-
-		if (const FGameplayTag* Clue = OptionToClue.Find(Selected))
-		{
-			Story->PlaceClue(SlotTag, *Clue);
-		}
-		else
-		{
-			Story->ClearSlot(SlotTag);
-		}
-	}
+	if (!Station) return;
 
 	if (Station->TryCommit())
 	{

@@ -31,4 +31,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Clue")
 	bool bDestroyOnCollect = false;
+	
+	virtual FText GetInteractionPrompt_Implementation(AActor* Interactor) const override;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Clue")
+    FText InteractionText = FText::FromString(TEXT("Pick up"));
 };
