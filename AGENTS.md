@@ -2,13 +2,20 @@
 
 Bu dosya, Unreal-JAM ajanlarının çalışma sırasını ve sınırlarını belirler. Kullanıcının açık oturum talimatı önceliklidir; fikir konuşması uygulama izni değildir.
 
+## GitHub ruleset’lerine dokunma
+
+- **Ajanlar ruleset oluşturamaz, değiştiremez, silemez veya devre dışı bırakamaz.** Gerekli ayarı insan kendisi yapar; ajan yalnız salt okunur inceleyip ne gerektiğini anlatır.
+- Hedef branch, etkinlik durumu, yazma/merge kısıtı, silme/force push koruması ve bypass/istisna listesi dahil hiçbir ruleset alanını değiştirme. Yönetici erişimine sahip olmak bu işlemleri yapma izni değildir.
+- Bu yasak tarayıcı, GitHub eklentisi, API, CLI ve script dahil bütün araçlar için geçerlidir. Bakım, eşitleme veya hata giderme için bile geçici istisna ekleme, koruma gevşetme veya kuralı kapatıp geri açma.
+- Koruma işlemi engellerse dur ve kullanıcıya bildir. Önceki bir bakım/eşitleme istisnasını sonraki işler için izin sayma.
+
 ## 1. MAIN'E DOKUNMA
 
-- **Hiçbir ajan main üzerinde dosya değiştirmez, commit/push veya merge yapmaz.** Main’e PR birleştirmeyi Ufuk insan olarak yapar. Ufuk’un ajanı da geliştirmeyi yalnız Ufuk branch’inde yapar.
+- **Hiçbir ajan main üzerinde dosya değiştirmez, commit/push veya merge yapmaz.** Main’e PR birleştirmeyi yetkili insan (Ufuk veya Safa) yapar. Ufuk’un ajanı da geliştirmeyi yalnız Ufuk branch’inde yapar.
 - Main’i okumak ve `origin/main` değişikliklerini kendi isim branch’ine almak serbesttir; bu işlem main’e yazma değildir.
 - İşe başlamadan aktif branch’i kontrol et. Main’deysen dosya yazmadan durumu bildir; temiz ağaçta kullanıcının kendi mevcut branch’ine geç. Kirli ağacı otomatik silme, taşıma veya discard etme; önce sor. Kendi branch’in yoksa oluşturulmuş varsayma, kullanıcıya bildir.
 - Başka kişinin branch’ine geçip iş yapma veya push etme. Kişisel branch ve main korumaları GitHub’da etkindir; güncel durum için EKIP_REHBERI.md’ye bak. Ayarlar değişmiş veya sunucu teknik engeli kalkmış olsa da bu çalışma sınırına uy.
-- Olağan geliştirme akışında main korumalarını gevşetme veya aşma. Commit/push yetkisini her oturumun açık kullanıcı talimatından belirle; önceki bir bakım/eşitleme iznini sonraki işler için sürekli izin sayma.
+- Main korumalarını gevşetme veya aşma. Commit/push yetkisini her oturumun açık kullanıcı talimatından belirle; önceki bir bakım/eşitleme iznini sonraki işler için sürekli izin sayma.
 
 ## 2. Başlangıçta oku ve doğrula
 
@@ -50,5 +57,5 @@ Bu dosya, Unreal-JAM ajanlarının çalışma sırasını ve sınırlarını bel
 
 - Göreve uygun kontrol yap; belge bağlantıları/tutarlılık, C++ derleme ve davranış, içerik referansları, gerekiyorsa paket testi. Yapılmamış testi başarılı gösterme.
 - **Her iş sonunda commit etmeyi hatırlat:** kişinin branch’ini, commit’e girecek değişiklikleri, varsa oyun işi kaydını ve önerilen kısa commit mesajını belirt. İzin yoksa kendin commit/push yapma. Repo/belge işi için oyun işi kaydı uydurma.
-- Commit/push izni olsa bile yalnız kişinin branch’inde çalış; main’e yazma/merge yapma. Ufuk’un insan incelemesine PR ile teslim edilir; eksikleri teslim eden düzeltir.
+- Commit/push izni olsa bile yalnız kişinin branch’inde çalış; main’e yazma/merge yapma. Yetkili insanın incelemesine PR ile teslim edilir; eksikleri teslim eden düzeltir.
 - Değişen dosyaları, kontrolleri, yapılamayan kontrolleri ve kalan sorunları kısa Türkçe bildir. Jam başvurusunu insan yapar; otomatik ajan başvurusu yapma.
