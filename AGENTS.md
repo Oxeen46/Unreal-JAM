@@ -7,7 +7,7 @@ Bu dosya, Unreal-JAM ajanlarının çalışma sırasını ve sınırlarını bel
 - **Hiçbir ajan main üzerinde dosya değiştirmez, commit/push veya merge yapmaz.** Main’e PR birleştirmeyi Ufuk insan olarak yapar. Ufuk’un ajanı da geliştirmeyi yalnız Ufuk branch’inde yapar.
 - Main’i okumak ve `origin/main` değişikliklerini kendi isim branch’ine almak serbesttir; bu işlem main’e yazma değildir.
 - İşe başlamadan aktif branch’i kontrol et. Main’deysen dosya yazmadan durumu bildir; temiz ağaçta kullanıcının kendi mevcut branch’ine geç. Kirli ağacı otomatik silme, taşıma veya discard etme; önce sor. Kendi branch’in yoksa oluşturulmuş varsayma, kullanıcıya bildir.
-- Başka kişinin branch’ine geçip iş yapma veya push etme. GitHub korumalarının kurulmuş olduğu varsayılmaz; sunucuda teknik engel olmasa da bu sınıra uy.
+- Başka kişinin branch’ine geçip iş yapma veya push etme. Kişisel branch ve main korumaları GitHub’da etkindir; güncel durum için EKIP_REHBERI.md’ye bak. Ayarlar değişmiş veya sunucu teknik engeli kalkmış olsa da bu çalışma sınırına uy.
 - Main korumalarını gevşetme veya aşma. Bu repo düzenleme oturumu Safa branch’inde yürütülür; commit/push kullanıcıya bırakılmıştır.
 
 ## 2. Başlangıçta oku ve doğrula

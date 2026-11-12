@@ -16,14 +16,15 @@ Bu rehber, AI kullansın veya kullanmasın her ekip üyesinin kurulum, çalışm
 2. **PR bir birleştirme talebidir.** GitHub’da kaynak kendi branch’iniz, hedef main olacak şekilde açılır. İşinizi ve testlerinizi anlatırsınız.
 3. **Ufuk kontrol eder ve insan olarak birleştirir.** PR uygunsa main’e Merge yapar; eksikse sahibine geri iletir. Başkasının eksik işini tamamlamak onun görevi değildir. Ufuk kendi geliştirmesini de Ufuk branch’inde yapar.
 4. **Diğerleri yeni main’i kendi branch’ine alır.** Bu alma işlemi sizin branch’inizi günceller, main’e yazmaz.
-5. **Okuma ve yazma farklıdır.** Public repoda bütün branch’ler okunabilir. Kişiye özel yazma kısıtı için GitHub ruleset kurulup doğrulanmalıdır; belgeye kural yazmak sunucu kilidi değildir.
-6. **Hedef koruma düzeni:** kişi branch’inde yalnız ilgili kişi ve yönetici Safa yazabilsin; main’i PR yoluyla yalnız Ufuk birleştirsin. Safa repo sahibi olarak kuralları sonradan değiştirebilsin. Force push ve silme kapalı kalsın. Bu korumalar henüz uygulanmadı; mevcut erişim çözülünce GitHub seçenekleriyle doğrulanacak.
-7. Safa kuralları **Settings → Rulesets** bölümünden gözden geçirip değiştirebilir. Sunucu kısıtları kurulana kadar herkes çalışma kuralına uymalı; “başkasının branch’ine teknik olarak yazamam” varsayımı yapmamalı.
+5. **Okuma ve yazma farklıdır.** Public repoda bütün branch’ler okunabilir. GitHub’daki etkin ruleset’ler bu beş branch’te yazmayı sınırlar: Safa/Oxeen46, Ufuk/HorizonTheBestVideoGameDeveloperEver, Canberk/baylenin, Mustafa/Tesbim yalnız kendi isim branch’ine yazabilir.
+6. **Main koruması:** yalnız Ufuk PR üzerinden birleştirebilir; doğrudan push kapalıdır. Kişisel branch’lerde PR zorunlu değildir. Force push ve branch silme, sahipleri dahil herkes için kapalıdır. Otomatik branch silme kapalıdır. Zorunlu ek inceleme sayısı sıfırdır; otomatik test/imzalı commit/lineer geçmiş zorunluluğu yoktur. Ufuk kendi PR’sini de birleştirebilir; bir ekip arkadaşının incelemesi tavsiye edilir.
+7. Safa repo sahibi olarak **Settings → Rulesets** bölümünden kuralları değiştirebilir. Bunun anlamı başka kişinin branch’ine veya main’e normal akışta yazma izni değildir. Ufuk yoksa teslimler bekler; acil durumda Safa geçici düzenlemeyi açıkça koordine eder. Ajanlar kendi başına korumaları gevşetmez.
+8. Koruma kuralları 12 Kasım 2026’da GitHub API’sinden geri okunarak ve her branch’e uygulanan etkin kurallar sorgulanarak doğrulandı. Diğer kişilerin hesaplarıyla canlı push/merge testi yapılmadı. GitHub aynı hesapla çalışan insan ile ajanı ayıramaz; Ufuk’un ajanı da main’e dokunmama talimatına uyar.
 
 ## 1. Şu anda ne hazır, ne bekliyor?
 
 1. 🟢 Belgeler ve sürümlenebilir ignore/LFS kuralları hazırlandı. Oyun projesi henüz yok; bugün `.uproject` bulamamak hata değildir.
-2. 🟡 Yerelde main, Safa, Ufuk, Canberk ve Mustafa branch’leri var. Güncel düzenleme Safa branch’indedir. GitHub isim branch’leri ve korumalar eklentinin 403 erişim hatası nedeniyle henüz kurulmadı. Commit/push Safa’ya bırakılmıştır.
+2. 🟢 Yerelde ve GitHub’da main, Safa, Ufuk, Canberk ve Mustafa branch’leri var; korumalar etkin. Bu belge güncellemesi Safa branch’indedir. Ajan açık izin olmadan commit/push yapmaz.
 3. 🔴 Proje adı, başlangıç şablonu, proje oluşturacak kişi, hedef platform, resmî Team Owner ve dosya sahipleri seçilmeden ilgili uygulamaya başlamayın. AI kullanmayan kişinin kim olduğu da burada varsayılmaz.
 
 ## 2. İlk kurulum ve ortak projeyi alma

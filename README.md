@@ -32,13 +32,13 @@
 
 🔴 Ajanlar `main` üzerinde dosya değiştirmez, commit/push veya merge yapmaz. Herkes kendi isim branch'inde çalışır. Ufuk'un insan olarak birleştirme rolü, ajanına main'i değiştirme izni vermez.
 
-🟡 GitHub'da kişiye özel branch korumaları henüz kurulmadı. Bu çalışma kuralı, sunucu tarafından uygulanmış yetki kısıtı olarak anlaşılmamalı. Public repodaki branch'ler herkes tarafından okunabilir.
+🟢 GitHub korumaları etkin: isim branch’lerine yalnız sahipleri yazabilir; `main`e yalnız Ufuk PR üzerinden birleştirebilir. Force push ve branch silme kapalıdır. Public repodaki branch’ler herkes tarafından okunabilir. Safa repo sahibi olarak kuralları değiştirebilir; yönetici rolü normal yazma kısıtını kendiliğinden aşmaz.
 
 ## 📌 Şu anki durum
 
 - Belgeler ve LFS hazırlığı var; Unreal projesi henüz oluşturulmadı.
 - Nihai oyunda birkaç film olacak; ayrıntılı tasarımı ekip mevcut fikir dosyasına elle yazacak.
 - İş sahipleri, proje adı ve başlangıç şablonu henüz seçilmedi.
-- Yerel isim branch'leri oluşturuldu; GitHub'daki isim branch'leri ve korumalar erişim sorunu nedeniyle bekliyor.
+- Beş branch yerelde ve GitHub’da mevcut. Koruma ayarları [Settings → Rulesets](https://github.com/Oxeen46/Unreal-JAM/settings/rules) bölümündedir; günlük akış ekip rehberinde açıklanır.
 
 Aktif iletişim WhatsApp/Discord üzerinden yürür. Bu repo bütün konuşmaların arşivi değildir; ayrıntılı çalışma adımları ekip rehberindedir.
