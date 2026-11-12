@@ -27,7 +27,7 @@ Bu dosya, sağlanan resmî kaynakların ekip için gerekli özetidir; resmî met
 
 - §7(a): AI kullanımı serbest ama zorunlu değil; ajan sayısı sınırı duyuruda yoktur. Ekipte herkesin AI kullanması gerekmiyor.
 - §15(a,c), EN s.10–11: dışarıdan alınan orijinal olmayan içerik başvuruda bildirilir; bu içerikler değerlendirilmez/puanlanmaz. Gerekli hak, izin ve lisansların sorumluluğu katılımcılardadır.
-- **Ekibin AI araçlarıyla ürettiği içerik, §15(c) uyarınca sourced asset sayılmaz.** ASSETS.md içinde üretim aracı ve kullanım bilgisi yine ekip tercihi olarak kaydedilir; dış içerikle ayrı sınıflandırılır. AI kullanmak hak ihlalini meşru kılmaz.
+- **Ekibin AI araçlarıyla ürettiği içerik, §15(c) uyarınca sourced asset sayılmaz.** Assets klasöründe kişisel kayıt dosyalarında üretim aracı ve kullanım bilgisi yine ekip tercihi olarak kaydedilir; dış içerikle ayrı sınıflandırılır. AI kullanmak hak ihlalini meşru kılmaz.
 - §15(d): UE başvurusunda belirtilen marka yönergesine uygun Unreal Engine logosu istisnası dışında ticari markalar/logolar kullanılamaz. Gerçek film adı, afiş, karakter, ses veya görüntüsünü haklar kontrol edilmeden kullanmayın.
 - §8: 13+ izleyiciye uygunluk; ayrımcı, nefret içerikli, müstehcen, hak ihlal eden ve diğer yasak içerikler kullanılamaz. Tam kısıtlamalar için §8 okunur.
 - §2 ve §15(b): yarışmanın duyurulması için sponsora geniş, sürekli ve telifsiz kullanım lisansı verilir. Kaynak içerik izinleri bu yükümlülükle birlikte kontrol edilir. §13–14 ödül, Team Owner üzerinden paylaşım ve doğrulama yükümlülüklerini içerir; özel bilgi repoya konmaz.
@@ -51,4 +51,4 @@ Bu dosya, sağlanan resmî kaynakların ekip için gerekli özetidir; resmî met
 
 ## 6. Ekip tercihlerinin sınırı
 
-5.8.4, yalnız C++, isim branch'leri, Ufuk'un merge rolü ve bu belge düzeni **ekip kararlarıdır**, jam zorunluluğu değildir. Bunların kesin kaydı decisions/Safa.md içindedir. GitHub/LFS sayısal kotaları bu belgede tanımlanmaz; ihtiyaç halinde güncel resmî GitHub kaynağı ve hesap kullanımı kontrol edilir.
+5.8.4, yalnız C++, isim branch'leri, Ufuk'un merge rolü ve bu belge düzeni **ekip kararlarıdır**, jam zorunluluğu değildir. Teknik çalışma düzeni EKIP_REHBERI.md içindedir; oyun kararları Kararlar_ve_Yapilanlar klasöründedir. GitHub/LFS sayısal kotaları bu belgede tanımlanmaz; ihtiyaç halinde güncel resmî GitHub kaynağı ve hesap kullanımı kontrol edilir.
