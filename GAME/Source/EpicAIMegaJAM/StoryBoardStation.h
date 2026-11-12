@@ -31,6 +31,11 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Board")
 	TSubclassOf<UStoryBoardWidget> WidgetClass;
+	
+	virtual FText GetInteractionPrompt_Implementation(AActor* Interactor) const override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Board")
+	FText InteractionText = FText::FromString(TEXT("Open storyboard"));
 
 private:
 	UPROPERTY()

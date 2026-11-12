@@ -9,17 +9,40 @@ struct FStoryBoardSlot
 {
 	GENERATED_BODY()
 
-	// Identifies this slot, e.g. Story.Slot.Motive
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGameplayTag SlotTag;
 
-	// The clue that belongs here
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FGameplayTag CorrectClue;
-
-	// Text shown on the board
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FText Label;
+};
+
+USTRUCT(BlueprintType)
+struct FStorylineRequirement
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTag SlotTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTag Clue;
+};
+
+USTRUCT(BlueprintType)
+struct FStoryline
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FText Title;
+
+	// Which clue has to sit in which slot
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FStorylineRequirement> Requirements;
+
+	// Facts that become true while this storyline is the chosen reality
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTagContainer ResultFacts;
 };
 
 UCLASS(BlueprintType)
@@ -34,7 +57,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FStoryBoardSlot> Slots;
 
-	// Facts set to true when the board is committed correctly
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FGameplayTagContainer ResultFacts;
+	TArray<FStoryline> Storylines;
 };

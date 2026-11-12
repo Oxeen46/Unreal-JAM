@@ -19,15 +19,6 @@ bool UStoryStateSubsystem::HasFact(FGameplayTag Fact) const
 {
 	return Facts.HasTagExact(Fact);
 }
-
-void UStoryStateSubsystem::CollectClue(FGameplayTag Clue)
-{
-	if (!Clue.IsValid() || CollectedClues.Contains(Clue)) return;
-
-	CollectedClues.Add(Clue);
-	OnClueCollected.Broadcast(Clue);
-}
-
 bool UStoryStateSubsystem::HasClue(FGameplayTag Clue) const
 {
 	return CollectedClues.Contains(Clue);
@@ -69,21 +60,72 @@ FGameplayTag UStoryStateSubsystem::GetPlacedClue(FGameplayTag Slot) const
 	return Found ? *Found : FGameplayTag();
 }
 
-bool UStoryStateSubsystem::CommitBoard(const UStoryBoardData* Board)
+void UStoryStateSubsystem::CollectClue(FGameplayTag Clue, const FText& Title)
 {
-	if (!Board) return false;
+	if (!Clue.IsValid() || CollectedClues.Contains(Clue)) return;
 
-	for (const FStoryBoardSlot& Slot : Board->Slots)
+	CollectedClues.Add(Clue);
+	ClueTitles.Add(Clue, Title);
+	OnClueCollected.Broadcast(Clue);
+}
+
+FText UStoryStateSubsystem::GetClueTitle(FGameplayTag Clue) const
+{
+	const FText* Found = ClueTitles.Find(Clue);
+	return Found ? *Found : FText::GetEmpty();
+}
+
+int32 UStoryStateSubsystem::GetCommittedStoryline(const UStoryBoardData* Board) const
+{
+	if (!Board) return INDEX_NONE;
+	const int32* Found = CommittedStorylines.Find(Board->GetPathName());
+	return Found ? *Found : INDEX_NONE;
+}
+
+int32 UStoryStateSubsystem::CommitBoard(const UStoryBoardData* Board)
+{
+	if (!Board) return INDEX_NONE;
+
+	// Find the storyline that matches what is on the board
+	int32 Match = INDEX_NONE;
+	for (int32 i = 0; i < Board->Storylines.Num() && Match == INDEX_NONE; ++i)
 	{
-		if (GetPlacedClue(Slot.SlotTag) != Slot.CorrectClue)
+		bool bAllMatch = Board->Storylines[i].Requirements.Num() > 0;
+		for (const FStorylineRequirement& Req : Board->Storylines[i].Requirements)
 		{
-			return false; // wrong or empty slot, the story doesn't hold together
+			if (GetPlacedClue(Req.SlotTag) != Req.Clue)
+			{
+				bAllMatch = false;
+				break;
+			}
+		}
+		if (bAllMatch) Match = i;
+	}
+	if (Match == INDEX_NONE) return INDEX_NONE;
+
+	const FGameplayTagContainer& NewFacts = Board->Storylines[Match].ResultFacts;
+
+	// Undo facts from the previously chosen storyline (the ones the new one doesn't also set)
+	const FString Key = Board->GetPathName();
+	if (const int32* Previous = CommittedStorylines.Find(Key))
+	{
+		if (Board->Storylines.IsValidIndex(*Previous))
+		{
+			for (const FGameplayTag& Old : Board->Storylines[*Previous].ResultFacts)
+			{
+				if (!NewFacts.HasTagExact(Old))
+				{
+					SetFact(Old, false);
+				}
+			}
 		}
 	}
 
-	for (const FGameplayTag& Fact : Board->ResultFacts)
+	for (const FGameplayTag& Fact : NewFacts)
 	{
 		SetFact(Fact, true);
 	}
-	return true;
+
+	CommittedStorylines.Add(Key, Match);
+	return Match;
 }

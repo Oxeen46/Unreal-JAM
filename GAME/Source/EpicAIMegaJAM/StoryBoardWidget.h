@@ -1,14 +1,17 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "GameplayTagContainer.h"
 #include "StoryBoardWidget.generated.h"
 
 class UStoryBoardData;
 class AStoryBoardStation;
 class UVerticalBox;
+class UHorizontalBox;
 class UButton;
 class UTextBlock;
-class UComboBoxString;
+class UClueNoteWidget;
+class UBoardSlotWidget;
 
 UCLASS()
 class EPICAIMEGAJAM_API UStoryBoardWidget : public UUserWidget
@@ -18,12 +21,22 @@ class EPICAIMEGAJAM_API UStoryBoardWidget : public UUserWidget
 public:
 	void InitBoard(UStoryBoardData* InBoard, AStoryBoardStation* InStation);
 
+	// Set these in WBP_StoryBoard's Class Defaults
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Board")
+	TSubclassOf<UClueNoteWidget> NoteWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Board")
+	TSubclassOf<UBoardSlotWidget> SlotWidgetClass;
+
 protected:
 	virtual void NativeOnInitialized() override;
+	virtual void NativeDestruct() override;
 
-	// These names must match the widgets you add in the editor
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UVerticalBox> SlotList;
+
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UHorizontalBox> ClueTray;
 
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> CommitButton;
@@ -44,14 +57,14 @@ private:
 	UFUNCTION()
 	void HandleClose();
 
+	UFUNCTION()
+	void HandleBoardChanged();
+
+	void RebuildAll();
+
 	UPROPERTY()
 	TObjectPtr<UStoryBoardData> Board;
 
 	UPROPERTY()
 	TObjectPtr<AStoryBoardStation> Station;
-
-	UPROPERTY()
-	TArray<TObjectPtr<UComboBoxString>> Combos; // same order as Board->Slots
-
-	TMap<FString, FGameplayTag> OptionToClue;
 };

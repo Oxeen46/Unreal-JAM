@@ -53,7 +53,7 @@ bool AStoryBoardStation::TryCommit()
 	UStoryStateSubsystem* Story = GI ? GI->GetSubsystem<UStoryStateSubsystem>() : nullptr;
 	if (!Story || !Board) return false;
 
-	if (Story->CommitBoard(Board))
+	if (Story->CommitBoard(Board) != INDEX_NONE)
 	{
 		bCompleted = true;
 		return true;
@@ -74,4 +74,8 @@ void AStoryBoardStation::CloseBoard()
 		ActivePC->SetShowMouseCursor(false);
 		ActivePC = nullptr;
 	}
+}
+FText AStoryBoardStation::GetInteractionPrompt_Implementation(AActor* Interactor) const
+{
+	return bCompleted ? FText::GetEmpty() : InteractionText;
 }
