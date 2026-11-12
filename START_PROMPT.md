@@ -22,17 +22,21 @@ push veya merge yapma. Yanlış branch'teysen önce durumu bildir; kirli ağacı
 koru, otomatik silme veya değişiklik taşıma yapma.
 
 AGENTS.md ve oradaki başlangıç belgelerini oku. Kararlar_ve_Yapilanlar
-klasöründe dört kişinin dosyasını ve MEVCUT_FIKIR.md dosyasını oku.
+klasöründe dört kişinin dosyasını ve 1-MEVCUT_FIKIR_VE_KARARLAR.md dosyasını oku.
 Assets klasöründe kendi kayıt dosyamı ve işe ilişkin içerikleri incele.
 Boş tasarım alanlarını doldurma. Erişemediğin belgeyi belirt ve erişim engelinde dur.
 WORK_GROUPS.md üzerinden iş/dosya sahipliğini doğrula; atama yoksa önce sor.
 
-Kesinleştirdiğim OYUN kararlarını ve yaptığın OYUN işlerini yalnız benim
-Kararlar_ve_Yapilanlar/<Ad>.md dosyama kısa ve doğru biçimde kaydet.
-Repo/GitHub düzenlemelerini oyun kararı gibi yazma. Her oyun işi commit'inde
-aynı commit'e ait yapılan iş ve test bilgisi dosyamda bulunsun; önerileri karar sayma.
-MEVCUT_FIKIR.md'yi ayrıca açık talimatım olmadan değiştirme.
-Bulduğum/ürettiğim assetlerin kaydını Assets/<Ad>.md'ye, paylaşılabilir kaynak
+Önce iş bölümümü seçmiş ve dosya sınırlarını kesinleştirmiş olmalıyım.
+O zamana kadar kişisel karar/iş kaydı başlatma. Sonrasında yalnız seçtiğim alanın
+kararlarını ve işlerini Kararlar_ve_Yapilanlar/<Ad>.md dosyama kaydet.
+Genel oyun kararlarını ortak dosyanın ayrı Genel oyun kararları tablosuna yaz;
+kabul veya ret olması fark etmez, açıkça kesinleşmiş olmalı. Repo/GitHub
+düzenlemelerini oyun kararı gibi yazma. Alan işi commit'inde yapılan iş ve test
+bilgisi kendi dosyamda bulunsun; önerileri karar sayma.
+1-MEVCUT_FIKIR_VE_KARARLAR.md içindeki Mevcut fikir bölümüne ASLA yazma;
+bu bölümü yalnız insanlar elle düzenler. Ajan yalnız ayrı karar tablosuna yazabilir.
+Bulduğum/ürettiğim assetlerin kaydını Assets/<Ad>/KAYNAKLAR.md'ye, paylaşılabilir kaynak
  dosyalarını Assets/<Ad>/ altına ekle; başka kişinin dosyalarına dokunma.
 İş sonunda kontrolleri ve sorunları bildir, commit etmeyi hatırlat.
 İzin vermediysem commit/push yapma. main'e birleştirmeyi Ufuk insan olarak yapar.

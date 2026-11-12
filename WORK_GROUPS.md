@@ -10,7 +10,7 @@ Bu dosya, 3D Unreal oyunu için işleri genel başlıklarda toplar. İşleri eki
 - Metinler, varsa diyaloglar ve ipuçları; İngilizce oyun içeriği.
 - Kapsam dışı işler ve açık tasarım soruları.
 
-Oyun fikrini ekip MEVCUT_FIKIR.md içine elle yazar; ajan tasarımı kendiliğinden doldurmaz.
+Oyun fikrini ekip 1-MEVCUT_FIKIR_VE_KARARLAR.md içine elle yazar; ajan tasarımı kendiliğinden doldurmaz.
 
 ## 2. Oyuncu, oynanış ve karakterler
 
@@ -75,3 +75,5 @@ Seçilen alan veya alt işi aşağıya yazın. İki kişi aynı başlığı payl
 | Diğer alanlar / alt işler | Atanmadı | Seçim sonrası yazılacak | İlgili alan sahipleri |
 
 Başkasının alanında değişiklik gerekiyorsa sahibine iletin. Ayrı branch aynı dosyadaki çakışmayı önlemez; bütün dosyaların tek sorumlusu olmalıdır.
+
+Kişisel karar/yapılan iş kayıtları, bu tablodaki iş seçimi ve dosya sınırları kesinleştikten sonra başlar. Genel oyun kararları kişisel dosyalara yazılmaz; ortak fikir dosyasının ayrı karar tablosunda tutulur.

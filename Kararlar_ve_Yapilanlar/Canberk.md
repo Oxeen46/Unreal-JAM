@@ -1,24 +1,28 @@
-# Canberk — oyun kararları ve yapılanlar
+# Canberk — seçilen iş alanının kararları ve yapılanlar
 
-Bu dosya Canberk'nın kesinleştirdiği oyun kararlarını ve commit'lerdeki oyun çalışmalarını tutar. Yalnız kendi kullanıcısı/ajanı günceller. GitHub ayarı, repo düzeni ve belge kurulumu oyun kararı olarak yazılmaz. Diğer üç kişinin kayıtları da işe başlarken okunur.
+Bu dosya yalnız Canberk tarafından seçilmiş/onaylanmış iş bölümünü ilgilendiren oyun kararlarını ve yapılan işleri tutar. Genel oyun kararları burada yazılmaz; ortak dosyanın ayrı tablosuna gider. Repo/GitHub/belge düzenlemesi oyun işi değildir. Yalnız kendi kullanıcısı ve onun ajanı yazar; diğer kişiler yalnız okur.
 
-## Oyun kararları
+## Seçilen iş bölümü
 
-Henüz bu kişi adına kesin oyun kararı kaydedilmedi.
+**Henüz seçilmedi.** WORK_GROUPS.md içinde kişi ve dosya sınırları kesinleşmeden karar/iş kaydı başlatılmaz. Ajan kendi kendine alan seçmez.
 
-Yeni kesin karar için: **Kimlik/tarih · Karar · Gerekçe · Etkilenen alan · Varsa yerine geçtiği karar**. Öneri ve sorular karar değildir. Son tarih diğer kişinin kararını kendiliğinden geçersiz kılmaz.
+## İş bölümüne ait kararlar
 
-## Yapılan oyun işleri — commit kayıtları
+Henüz kayıt yok. İş bölümü seçildikten sonra aşağıdaki tabloya yalnız o alanı etkileyen, açıkça kabul veya reddedilmiş kararlar eklenir.
 
-Henüz oyun geliştirme işi kaydedilmedi. Başlangıç repo/belge çalışması oyun geliştirmesi olarak gösterilmez.
+| Kimlik / tarih | İlgili iş / dosya | Karar ve kabul / ret | Gerekçe | Etkilenen bağlantı | Varsa yerine geçtiği kayıt |
+|---|---|---|---|---|---|
 
-Her oyun işi commit'i öncesinde bu bölümde kısa bir kayıt oluşturun:
+Öneri ve sorular karar değildir. Başka kişinin veya genel oyunun kararını kendi alan kararı gibi kaydetmeyin. Çelişkide otomatik üstünlük yoktur; koordinasyon gerekir.
+
+## Yapılan işler — commit kayıtları
+
+Henüz kayıt yok. İş bölümü seçildikten sonra, kendi alanındaki her oyun işi commit’inde kısa bir kayıt tutulur:
 
 - **Tarih / commit başlığı:**
-- **Yapılan iş:**
-- **Değişen oyun dosyaları:**
-- **Kontrol / test ve sonuç:**
+- **Yapılan iş ve ilgili oyun dosyaları:**
+- **Kontrol / test sonucu:**
 - **Eksik / bilinen sorun:**
-- **İlgili oyun kararı:** Varsa kimliği; yoksa yok.
+- **İlgili karar kimliği:** Varsa; genel kararı tekrar yazmak yerine kimliğine referans verin.
 
-Kayıt, anlattığı oyun değişiklikleriyle aynı commit'e dahil edilir. Commit henüz oluşmadığı için kendi SHA'sını tahmin etmeyin; dosyanın Git geçmişi hangi commit'e ait olduğunu gösterir. Geriye dönük bir iş anlatılıyorsa gerçek commit kimliğini belirtin. Sadece repo/belge düzenlenen commit için oyun işi uydurmayın.
+Kayıt ilgili oyun değişiklikleriyle aynı commit’e girer. Kendi commit SHA’sını önceden tahmin etmeyin; ilişki dosyanın Git geçmişinde görünür. Geriye dönük kayıt gerçek commit kimliğini içermelidir. İş bölümü seçilmeden veya yalnız repo/belge işi yapılmışken oyun işi kaydı uydurulmaz.

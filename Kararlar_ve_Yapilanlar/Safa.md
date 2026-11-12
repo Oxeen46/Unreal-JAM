@@ -1,34 +1,28 @@
-# Safa — oyun kararları ve yapılanlar
+# Safa — seçilen iş alanının kararları ve yapılanlar
 
-Bu dosya Safa'nın kesinleştirdiği oyun kararlarını ve commit'lerdeki oyun çalışmalarını tutar. Yalnız kendi kullanıcısı/ajanı günceller. GitHub ayarı, repo düzeni ve belge kurulumu oyun kararı olarak yazılmaz. Diğer üç kişinin kayıtları da işe başlarken okunur.
+Bu dosya yalnız Safa tarafından seçilmiş/onaylanmış iş bölümünü ilgilendiren oyun kararlarını ve yapılan işleri tutar. Genel oyun kararları burada yazılmaz; ortak dosyanın ayrı tablosuna gider. Repo/GitHub/belge düzenlemesi oyun işi değildir. Yalnız kendi kullanıcısı ve onun ajanı yazar; diğer kişiler yalnız okur.
 
-## Oyun kararları
+## Seçilen iş bölümü
 
-### S-001 — Oyunun temeli — 2026-11-12
-- **Karar:** Unreal Engine 5.8.4; oyun programlaması yalnız C++. Blueprint programlama veya Blueprint tabanlı sistem kurulmayacak. Model, materyal, animasyon, harita ve ses içerikleri kullanılabilir.
-- **Gerekçe:** Devirde kesin teknik tercih olarak bildirildi; ayrıntılı gerekçe belirtilmedi.
-- **Etkilenen alan:** Oyun sistemleri ve içerik bağlantıları.
-- **Yerine geçtiği karar:** Yok.
+**Henüz seçilmedi.** WORK_GROUPS.md içinde kişi ve dosya sınırları kesinleşmeden karar/iş kaydı başlatılmaz. Ajan kendi kendine alan seçmez.
 
-### S-002 — Film kapsamı — 2026-11-12
-- **Karar:** Nihai oyunda birkaç film olacak. Bildirilen jam teması Director’s Cut. Senaryo oluşturma yöntemi henüz seçilmedi; ayrıntılı tasarım MEVCUT_FIKIR.md içinde ekipçe yazılacak.
-- **Gerekçe:** Devirde kesin kapsam olarak bildirildi; ayrıntılı gerekçe belirtilmedi.
-- **Etkilenen alan:** Oyun tasarımı ve içerik kapsamı.
-- **Yerine geçtiği karar:** Tek filmle ilk döngü önerisi nihai oyun kapsamı değildir.
+## İş bölümüne ait kararlar
 
-Yeni kesin karar için: **Kimlik/tarih · Karar · Gerekçe · Etkilenen alan · Varsa yerine geçtiği karar**. Öneri ve sorular karar değildir. Son tarih diğer kişinin kararını kendiliğinden geçersiz kılmaz.
+Henüz kayıt yok. İş bölümü seçildikten sonra aşağıdaki tabloya yalnız o alanı etkileyen, açıkça kabul veya reddedilmiş kararlar eklenir.
 
-## Yapılan oyun işleri — commit kayıtları
+| Kimlik / tarih | İlgili iş / dosya | Karar ve kabul / ret | Gerekçe | Etkilenen bağlantı | Varsa yerine geçtiği kayıt |
+|---|---|---|---|---|---|
 
-Henüz oyun geliştirme işi kaydedilmedi. Başlangıç repo/belge çalışması oyun geliştirmesi olarak gösterilmez.
+Öneri ve sorular karar değildir. Başka kişinin veya genel oyunun kararını kendi alan kararı gibi kaydetmeyin. Çelişkide otomatik üstünlük yoktur; koordinasyon gerekir.
 
-Her oyun işi commit'i öncesinde bu bölümde kısa bir kayıt oluşturun:
+## Yapılan işler — commit kayıtları
+
+Henüz kayıt yok. İş bölümü seçildikten sonra, kendi alanındaki her oyun işi commit’inde kısa bir kayıt tutulur:
 
 - **Tarih / commit başlığı:**
-- **Yapılan iş:**
-- **Değişen oyun dosyaları:**
-- **Kontrol / test ve sonuç:**
+- **Yapılan iş ve ilgili oyun dosyaları:**
+- **Kontrol / test sonucu:**
 - **Eksik / bilinen sorun:**
-- **İlgili oyun kararı:** Varsa kimliği; yoksa yok.
+- **İlgili karar kimliği:** Varsa; genel kararı tekrar yazmak yerine kimliğine referans verin.
 
-Kayıt, anlattığı oyun değişiklikleriyle aynı commit'e dahil edilir. Commit henüz oluşmadığı için kendi SHA'sını tahmin etmeyin; dosyanın Git geçmişi hangi commit'e ait olduğunu gösterir. Geriye dönük bir iş anlatılıyorsa gerçek commit kimliğini belirtin. Sadece repo/belge düzenlenen commit için oyun işi uydurmayın.
+Kayıt ilgili oyun değişiklikleriyle aynı commit’e girer. Kendi commit SHA’sını önceden tahmin etmeyin; ilişki dosyanın Git geçmişinde görünür. Geriye dönük kayıt gerçek commit kimliğini içermelidir. İş bölümü seçilmeden veya yalnız repo/belge işi yapılmışken oyun işi kaydı uydurulmaz.
