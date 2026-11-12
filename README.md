@@ -21,8 +21,8 @@
 | Yeni AI oturumu açmak | [Başlangıç promptu](START_PROMPT.md) |
 | Ajanın çalışma sınırlarını öğrenmek | [AGENTS.md](AGENTS.md) |
 | Yapılacak işleri seçmek ve dosya sahipliğini belirlemek | [İş alanları](WORK_GROUPS.md) |
-| Oyunun fikrini yazmak / okumak | [Mevcut fikir](Kararlar_ve_Yapilanlar/MEVCUT_FIKIR.md) |
-| Oyun kararlarını ve yapılan oyun işlerini görmek | [Kararlar ve yapılanlar](Kararlar_ve_Yapilanlar/) |
+| İnsanların yazdığı oyun fikri ve ayrı genel karar tablosu | [1 — Mevcut fikir ve kararlar](Kararlar_ve_Yapilanlar/1-MEVCUT_FIKIR_VE_KARARLAR.md) |
+| İş seçimi sonrası kişiye ait alan kararları ve yapılanlar | [Kararlar ve yapılanlar](Kararlar_ve_Yapilanlar/) |
 | Bulunan veya üretilen assetleri eklemek | [Assets klasörü](Assets/) |
 | Yarışma ve teslim koşullarını kontrol etmek | [Jam kuralları](JAM_RULES.md) |
 

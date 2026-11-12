@@ -49,7 +49,7 @@ Bu rehber, AI kullansın veya kullanmasın her ekip üyesinin kurulum, çalışm
 2. 🟢 **Fetch origin**, uzaktaki değişiklik bilgisini getirir; kendi başına çalışan dosyalarınızı main ile birleştirmez. Temizken kendi branch'iniz için **Pull origin** yapın.
 3. 🟢 Kendi isim branch’inizde kalın ve Fetch origin yapın. Güncel main’i kendi branch’inize almak için **Branch → Merge into current branch** içinde uzak main’i (`origin/main`) seçin. Terminal karşılığı temiz çalışma ağacında `git fetch origin`, ardından `git merge origin/main` olur. Main’i kendi branch’inize alırsınız; kendi işinizi main’e göndermiş olmazsınız. Çakışmada 10. bölüme geçin.
 4. 🟡 Bu işlem çakışırsa 10. bölüme geçin. Ortak geçmişi yeniden yazan rebase/force push ile çözmeye çalışmayın.
-5. 🟢 Dört karar dosyasını, MEVCUT_FIKIR.md'yi, iş alanınızı ve JAM_RULES.md'yi okuyun. Kararlar yalnız push → main'e birleştirme → pull sonrası diğer kişilere ulaşır; WhatsApp mesajı otomatik repo kaydı değildir.
+5. 🟢 Dört karar dosyasını, 1-MEVCUT_FIKIR_VE_KARARLAR.md'yi, iş alanınızı ve JAM_RULES.md'yi okuyun. Kararlar yalnız push → main'e birleştirme → pull sonrası diğer kişilere ulaşır; WhatsApp mesajı otomatik repo kaydı değildir.
 6. 🔴 İşin dosya sahibi belli değilse veya aynı dosyada başkası çalışıyorsa önce konuşun. Branch ayrılığı aynı dosyadaki çakışmayı önlemez.
 
 ## 5. Üretim ve sahiplik
@@ -59,13 +59,14 @@ Bu rehber, AI kullansın veya kullanmasın her ekip üyesinin kurulum, çalışm
 3. 🟡 Ortak header, veri tipi, sınıf arayüzü, modül/target dosyaları metin olsa da çakışabilir. Fonksiyon imzası, olaylar ve veri sözleşmelerini sahipleri önceden anlaşsın.
 4. 🟢 Ana haritayı yalnız sahibi düzenler. Diğerleri kendi test haritalarında çalışır; hazır C++ aktör/bileşen ve içeriklerini ana harita sahibine teslim eder. Test haritası çalıştı diye ana haritaya yerleştirilmiş sayılmaz.
 5. 🔴 Input, collision, `.uproject`, ortak Config, eklenti ve derleme ayarları tek sahibindedir. Main'e birleştirme rolü, bütün bu dosyaların sahipliği demek değildir.
+   Kendi branch’inizde teknik olarak başka dosyaları da değiştirebilirsiniz; branch koruması dosya sahipliği kilidi değildir. Çalışma kuralı olarak yalnız kendi Assets klasörünüze ve kişisel alan karar dosyanıza yazın. Ek otomatik denetim kurulmadı; Ufuk PR incelemesinde izinsiz alan değişikliklerini de kontrol eder.
 6. 🟡 C++ programlama kararı materyal, animasyon, model, ses veya efekt içeriklerini yasaklamaz; fakat Blueprint tabanlı oyun, UI veya animasyon sistemi kurulmaz. Gerekli bağlantı yöntemi net değilse uygulamadan önce konuşun.
 
 ## 6. Unreal içeriklerini güvenli paylaşma
 
 1. 🟢 Model, doku, materyal, animasyon, ses, efekt ve harita için de sahip belirleyin. Ortak materyali veya skeleton'ı değiştirmek birçok kişinin içeriğini etkileyebilir.
 2. 🟡 `.uasset` ve `.umap` ikili dosyalardır; Git bunları güvenilir biçimde satır satır birleştiremez. Aynı assete eşzamanlı müdahale etmeyin. Kaynak model dosyasıyla import edilmiş asseti aynı teslimde tutarlı güncelleyin.
-3. 🟢 Dış/AI içerik kullanınca Assets/<Ad>.md dosyanızı güncelleyin; paylaşılabilir dosyaları Assets/<Ad>/ altına ekleyin; lisans, atıf, araç/kaynak ve proje yolu eksik kalmasın. Public repoya kaynak dosyası koyma iznini ayrıca kontrol edin.
+3. 🟢 Dış/AI içerik kullanınca Assets/<Ad>/KAYNAKLAR.md dosyanızı güncelleyin; paylaşılabilir dosyaları Assets/<Ad>/ altına ekleyin; lisans, atıf, araç/kaynak ve proje yolu eksik kalmasın. Public repoya kaynak dosyası koyma iznini ayrıca kontrol edin.
 4. 🟡 Unreal içinde taşıma/yeniden adlandırma referans ve redirector üretir. Ortak bağımlılıklar varsa sahiplerle koordine edin; redirector temizliğini herkesi etkileyen sürpriz işlem yapmayın.
 5. 🟡 LFS takibini `git check-attr filter -- dosya-yolu` ile kontrol edin; takip edilen dosyada `filter: lfs` beklenir. Commit sonrası `git lfs ls-files` ile doğrulayın. Yeni uzantı için gerekliliği değerlendirin; büyük dosyayı normal Git geçmişine yanlışlıkla koymayın.
 6. 🔴 LFS kotası/kimlik doğrulama hatasında durun. Ücretli plan veya satın alma başlatmayın, geçmişi dönüştürmeyin. Sayısal kota kullanmadan [güncel GitHub LFS belgelerini](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-git-large-file-storage) ve hesap kullanımını kontrol edin.
@@ -74,11 +75,22 @@ Bu rehber, AI kullansın veya kullanmasın her ekip üyesinin kurulum, çalışm
 
 1. 🟢 Unreal'da kaydedin, gerekli C++ derlemeyi ve ilgili oynanış testini yapın. Ortak C++/entegrasyon değişikliğinde yalnız Live Coding sonucuna güvenmeyin; editör kapalı tam derleme de yapın.
 2. 🟢 **Changes** listesini tek tek inceleyin. İlgisiz dosya, özel bilgi veya üretilebilir çıktı varsa commit'e dahil etmeyin. Kaydedilmemiş editör içeriği Git'e görünmez.
-3. 🟢 Oyun işi için önce kendi Kararlar_ve_Yapilanlar/<Ad>.md kaydınızı değişikliklerle birlikte hazırlayın. Birbiriyle ilişkili küçük değişiklikleri açıklayıcı mesajla kendi branch’inize commit edin. Commit yerel kayıttır; **Push origin** uzaktaki branch'e gönderir.
+3. 🟢 İş bölümünüz seçildikten sonraki alan işleri için önce kendi Kararlar_ve_Yapilanlar/<Ad>.md kaydınızı değişikliklerle birlikte hazırlayın. Birbiriyle ilişkili küçük değişiklikleri açıklayıcı mesajla kendi branch’inize commit edin. Commit yerel kayıttır; **Push origin** uzaktaki branch'e gönderir.
 4. 🟡 Push'u tamamlayın ve LFS hatası olmadığını kontrol edin. Commit var ama push yoksa ekip sizin değişikliklerinizi henüz alamaz. Push da tek başına main'e birleşme değildir.
 5. 🟢 Gün sonunda gerekli içerikleri kaydedin, kendi işinizi test edin ve paylaşılmaya hazır olanı push edin. Bitmemiş işi “test edildi” diye sunmayın; durumunu koordinasyon kanalında açıkça belirtin. Ayrı günlük rapor zorunlu değil.
 
 ## 8. PR ve main'e teslim
+
+**GitHub üzerinde istek açma:**
+
+1. Kendi branch’inizdeki commit’leri push edin; yalnız yerel commit GitHub’da görünmez.
+2. Repo sayfasında **Pull requests → New pull request** açın.
+3. **base: main**, **compare: kendi isim branch’iniz** seçin. Örneğin Safa için `base: main ← compare: Safa`.
+4. **Files changed** bölümünde yalnız beklediğiniz işlerin bulunduğunu kontrol edin. Açıklamaya yapılan iş, test ve bilinen sorunları yazıp **Create pull request** seçin. Başlık açılması main’i değiştirmez.
+5. Ufuk PR’yi inceler; düzeltme gerekirse aynı kişi aynı branch’e yeni commit/push yapar, PR otomatik güncellenir. Yeni PR açmak gerekmez.
+6. Ufuk uygunsa **Merge pull request → Confirm merge** ile birleştirir. Kalıcı isim branch’ini silmez. Uzun süre kullanılan isim branch’lerinde normal merge yöntemi geçmişi takip etmeyi kolaylaştırır.
+7. Birleştirme sonrası herkes kendi branch’inde `git fetch origin` ve temiz ağaçta `git merge origin/main` ile main’de tamamlanan işleri alır. Bu işlem main’e yazmaz.
+
 
 1. 🟢 Kendi branch'inizden main'e PR açın. Neyi değiştirdiğinizi, nasıl test ettiğinizi, eksikleri ve bağımlılıkları kısa anlatın.
 2. 🟢 Ufuk teslimi inceler; gereken projeyi açma/derleme/oynanış kontrolünden sonra main'e birleştirir. Eksik işi üreticisine geri iletir; herkesi düzeltmek zorunda değildir.
@@ -111,10 +123,10 @@ Bu rehber, AI kullansın veya kullanmasın her ekip üyesinin kurulum, çalışm
 
 ## 12. Kararlar, kapsam ve iletişim
 
-1. 🟢 Kesin OYUN kararını Kararlar_ve_Yapilanlar/<Ad>.md dosyanıza kısa gerekçe, etkilenen alan ve varsa yerine geçtiği kayıtla ekleyin. Ajan ayrıca beklemeden kaydeder; AI kullanmıyorsanız elle yazın. Her oyun işi commit’ine aynı dosyada yapılan iş, değişen oyun dosyaları, test sonucu ve eksikleri ekleyin. GitHub ayarı veya repo düzenlemesini oyun kararı/oyun işi diye kaydetmeyin.
+1. 🟢 Önce iş bölümünüzü seçip WORK_GROUPS.md içinde kişi/dosya sınırlarını netleştirin. Kişisel karar ve yapılan iş kaydı ancak bundan sonra başlar. Yalnız seçtiğiniz alanın kararlarını Kararlar_ve_Yapilanlar/<Ad>.md içine; o alandaki her oyun işi commit’inin yapılan iş/test/eksik bilgisini aynı dosyaya yazın. Genel oyun kararları ortak dosyadaki ayrı tabloya gider. Açıkça kabul veya reddedilmiş karar kaydedilebilir; öneri/soru karar değildir. GitHub veya repo düzenini oyun işi diye yazmayın.
 2. 🔴 Başka kişinin karar dosyasını düzenlemeyin. En yeni tarihli kayıt otomatik üstün değildir; çelişkiyi ilgili kişilerle çözün, uzlaşıyı kendi kaydınızda önceki kimliklere referansla belirtin.
 3. 🟡 Sahiplik/ortak arayüz değişikliğinde ilgili sahiplerle; ana harita yerleşiminde harita sahibiyle; merge ve teslim çatışmasında Ufuk'la; kapsam/film tasarımında ekiple konuşun.
-4. 🟢 MEVCUT_FIKIR.md oyun fikrinin tek ana kaynağıdır. İçeriğini ekip elle doldurur; ajan ancak ayrıca açık talimat alırsa değiştirir. Eski fikirleri kendiliğinden taşımaz.
+4. 🟢 1-MEVCUT_FIKIR_VE_KARARLAR.md içindeki Mevcut fikir bölümünü yalnız insanlar elle düzenler; ajanlar bu bölüme yazmaz. Ajanlar yalnız ayrı Genel oyun kararları tablosuna kullanıcının açıkça kesinleştirdiği genel oyun kararını ekler. Böylece tasarım açıklaması ile kabul/ret kararları birbirine karışmaz. Ortak tabloya eşzamanlı eklemeler yine çakışabilir; diğer kayıtları koruyarak birleştirin.
 
 ## 13. Paketleme ve jam teslimi
 

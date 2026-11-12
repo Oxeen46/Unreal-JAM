@@ -1,13 +1,19 @@
 # Asset paylaşım alanı
 
-Bu klasör, bulduğumuz veya ürettiğimiz paylaşılabilir içerikleri ve kaynak bilgilerini toplar. Herkesin ayrı kayıt dosyası ve yükleme klasörü vardır.
+Bu klasör, bulduğumuz veya ürettiğimiz paylaşılabilir içerikleri ve kaynak bilgilerini toplar. Herkes yalnız kendi klasörüne dosya ekler/değiştirir; kaynak kaydı da o klasördeki KAYNAKLAR.md dosyasındadır.
 
 | Kişi | Kaynak / lisans kaydı | Dosya yükleme alanı |
 |---|---|---|
-| Safa | [Safa.md](Safa.md) | [Safa/](Safa/) |
-| Ufuk | [Ufuk.md](Ufuk.md) | [Ufuk/](Ufuk/) |
-| Canberk | [Canberk.md](Canberk.md) | [Canberk/](Canberk/) |
-| Mustafa | [Mustafa.md](Mustafa.md) | [Mustafa/](Mustafa/) |
+| Safa | [KAYNAKLAR.md](Safa/KAYNAKLAR.md) | [Safa/](Safa/) |
+| Ufuk | [KAYNAKLAR.md](Ufuk/KAYNAKLAR.md) | [Ufuk/](Ufuk/) |
+| Canberk | [KAYNAKLAR.md](Canberk/KAYNAKLAR.md) | [Canberk/](Canberk/) |
+| Mustafa | [KAYNAKLAR.md](Mustafa/KAYNAKLAR.md) | [Mustafa/](Mustafa/) |
+
+## Kayıt dosyası neden var?
+
+Dosya adı içerik, kaynak URL’si, lisans ve atıf yükümlülüğünü tek başına koruyamaz. Jam’in kullanılan dış içerik bildirimi için bu bilgiler gerekir. Bu nedenle kişi başına tek kısa KAYNAKLAR.md kendi klasörünün içinde tutulur; klasör dışında kişi kayıtları yoktur.
+
+İsimleri anlaşılır verin: örneğin `Masa_Ahsap.fbx`, `Kaplama_Tugla.png`, `Ses_KapiAcma.wav`. Dosya adı kaynak kaydının yerine geçmez. Başkasının klasöründe dosya değiştirme/silme yapmayın.
 
 ## Nasıl kullanılır?
 
