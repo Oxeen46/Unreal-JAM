@@ -3,6 +3,7 @@
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
 #include "InteractableInterface.h"
+#include "StoryBoardData.h"
 #include "StoryBoardActor.generated.h"
 
 class USceneComponent;
@@ -11,7 +12,6 @@ class UStaticMeshComponent;
 class UTextRenderComponent;
 class UCameraComponent;
 class UMaterialInterface;
-class UStoryBoardData;
 class UStoryStateSubsystem;
 class APlayerController;
 
@@ -19,7 +19,6 @@ USTRUCT()
 struct FBoardNote
 {
 	GENERATED_BODY()
-
 	UPROPERTY() FGameplayTag Clue;
 	UPROPERTY() TObjectPtr<USceneComponent> Root;
 	UPROPERTY() TObjectPtr<UStaticMeshComponent> Mesh;
@@ -30,9 +29,18 @@ USTRUCT()
 struct FBoardSlotVisual
 {
 	GENERATED_BODY()
-
 	UPROPERTY() TObjectPtr<UStaticMeshComponent> Mesh;
 	UPROPERTY() TObjectPtr<UTextRenderComponent> Text;
+};
+
+USTRUCT()
+struct FConfirmedBlock
+{
+	GENERATED_BODY()
+	int32 StorylineIndex = INDEX_NONE;
+	UPROPERTY() TObjectPtr<UStaticMeshComponent> Mesh;
+	UPROPERTY() TObjectPtr<UTextRenderComponent> Text;
+	UPROPERTY() TObjectPtr<UStaticMeshComponent> Pin; // active indicator
 };
 
 UCLASS()
@@ -42,8 +50,6 @@ class EPICAIMEGAJAM_API AStoryBoardActor : public AActor, public IInteractableIn
 
 public:
 	AStoryBoardActor();
-	
-	bool bLockAfterCommit = false;
 
 	virtual void Tick(float DeltaTime) override;
 	virtual void Interact_Implementation(AActor* Interactor) override;
@@ -62,42 +68,56 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+	// Build
 	void BuildSlots();
 	void BuildNotes();
 	void DestroyNotes();
 	void RefreshLayout();
+	void RefreshPins();
 
+	// Flow
 	void EnterBoard(APlayerController* PC);
 	void ExitBoard();
 	void FinishExit();
 
+	// Drag
 	void BeginDrag();
 	void UpdateDrag();
 	void EndDrag();
+
+	// Logic
 	void TryRewrite();
+	void ActivateStoryline(int32 Index); // INDEX_NONE = None
+	int32 GetActiveStoryline() const;
+
+	// Block row
+	void AddConfirmedBlock(int32 StorylineIndex);
+	void HandleBlockClick(int32 StorylineIndex);
 
 	UStoryStateSubsystem* GetStory() const;
 
-	UPROPERTY(VisibleAnywhere, Category="Board") TObjectPtr<USceneComponent> SceneRoot;
-	UPROPERTY(VisibleAnywhere, Category="Board") TObjectPtr<UStaticMeshComponent> BoardMesh;
-	UPROPERTY(VisibleAnywhere, Category="Board") TObjectPtr<UCameraComponent> BoardCamera;
-	UPROPERTY(VisibleAnywhere, Category="Board") TObjectPtr<UTextRenderComponent> TitleText;
-	UPROPERTY(VisibleAnywhere, Category="Board") TObjectPtr<UTextRenderComponent> StatusText;
-	UPROPERTY(VisibleAnywhere, Category="Board") TObjectPtr<UTextRenderComponent> HintText;
+	// Components
+	UPROPERTY(VisibleAnywhere) TObjectPtr<USceneComponent> SceneRoot;
+	UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> BoardMesh;
+	UPROPERTY(VisibleAnywhere) TObjectPtr<UCameraComponent> BoardCamera;
+	UPROPERTY(VisibleAnywhere) TObjectPtr<UTextRenderComponent> TitleText;
+	UPROPERTY(VisibleAnywhere) TObjectPtr<UTextRenderComponent> StatusText;
+	UPROPERTY(VisibleAnywhere) TObjectPtr<UTextRenderComponent> HintText;
 
 	UPROPERTY() TObjectPtr<UStaticMesh> CubeMesh;
 	UPROPERTY() TObjectPtr<UMaterialInterface> BasicMat;
 	UPROPERTY() TArray<FBoardSlotVisual> SlotVisuals;
 	UPROPERTY() TArray<FBoardNote> Notes;
+	UPROPERTY() TArray<FConfirmedBlock> ConfirmedBlocks;
 	UPROPERTY() TObjectPtr<APlayerController> ActivePC;
 
 	FTimerHandle ExitTimer;
 	bool bActive = false;
-	bool bCompleted = false;
 	bool bPrevLMB = false;
 	bool bPrevEnter = false;
 	bool bPrevBack = false;
 	int32 DraggedIndex = INDEX_NONE;
 	float InputReadyTime = 0.f;
 	float BoardWidth = 600.f;
+	int32 ActiveStoryline = INDEX_NONE; // currently chosen reality
 };
