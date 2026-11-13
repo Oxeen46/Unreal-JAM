@@ -20,7 +20,9 @@ public class EpicAIMegaJAM : ModuleRules
 			"UMG",
 			"Slate",
 			"SlateCore",
-            "GameplayTags"
+            "GameplayTags",
+            "NavigationSystem",
+            "GameplayTasks"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

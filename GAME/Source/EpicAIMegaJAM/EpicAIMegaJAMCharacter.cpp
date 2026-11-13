@@ -42,6 +42,8 @@ AEpicAIMegaJAMCharacter::AEpicAIMegaJAMCharacter()
 	// Configure character movement
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->AirControl = 0.5f;
+	
+	CombatComponent = CreateDefaultSubobject<UPlayerCombatComponent>(TEXT("CombatComponent"));
 }
 
 void AEpicAIMegaJAMCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

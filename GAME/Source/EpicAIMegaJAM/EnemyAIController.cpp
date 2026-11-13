@@ -1,37 +1,32 @@
 #include "EnemyAIController.h"
 #include "EnemyCharacter.h"
-#include "BehaviorTree/BlackboardComponent.h"
+#include "EnemyCombatComponent.h"
+#include "PlayerCombatComponent.h"
+#include "NavigationSystem.h"
+#include "Navigation/PathFollowingComponent.h"
 #include "Perception/AIPerceptionTypes.h"
-#include "GameFramework/Character.h"
-
-const FName AEnemyAIController::TargetActorKey = TEXT("TargetActor");
-const FName AEnemyAIController::PatrolLocationKey = TEXT("PatrolLocation");
-const FName AEnemyAIController::HomeLocationKey = TEXT("HomeLocation");
-const FName AEnemyAIController::LastKnownLocationKey = TEXT("LastKnownLocation");
-const FName AEnemyAIController::HasSeenPlayerKey = TEXT("HasSeenPlayer");
+#include "GameFramework/Pawn.h"
+#include "Engine/World.h"
+#include "Engine/Engine.h"
 
 AEnemyAIController::AEnemyAIController()
 {
+	PrimaryActorTick.bCanEverTick = true;
+
 	AIPerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerception"));
 	SetPerceptionComponent(*AIPerceptionComp);
 
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
 	SightConfig->SightRadius = 1400.f;
 	SightConfig->LoseSightRadius = 1900.f;
-	SightConfig->PeripheralVisionAngleDegrees = 80.f;		// narrower = more focused / creepy
+	SightConfig->PeripheralVisionAngleDegrees = 70.f;
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
-	SightConfig->AutoSuccessRangeFromLastSeenLocation = 500.f;
+	SightConfig->AutoSuccessRangeFromLastSeenLocation = -1.f; // hiding works
 
 	AIPerceptionComp->ConfigureSense(*SightConfig);
 	AIPerceptionComp->SetDominantSense(SightConfig->GetSenseImplementation());
-}
-
-void AEnemyAIController::OnPossess(APawn* InPawn)
-{
-	Super::OnPossess(InPawn);
-	ControlledEnemy = Cast<AEnemyCharacter>(InPawn);
 }
 
 void AEnemyAIController::BeginPlay()
@@ -42,58 +37,236 @@ void AEnemyAIController::BeginPlay()
 	{
 		AIPerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyAIController::OnTargetPerceptionUpdated);
 	}
+}
 
-	// Run your Behavior Tree here (or set it in the Character defaults)
-	// RunBehaviorTree(EnemyBehaviorTree);
+void AEnemyAIController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	ControlledEnemy = Cast<AEnemyCharacter>(InPawn);
+	if (!ControlledEnemy) return;
+
+	// Use the Blueprint's combat component if it has one, otherwise add one
+	Combat = ControlledEnemy->FindComponentByClass<UEnemyCombatComponent>();
+	if (!Combat)
+	{
+		Combat = NewObject<UEnemyCombatComponent>(ControlledEnemy);
+		Combat->RegisterComponent();
+	}
+
+	Target = nullptr;
+	EnterState(EEnemyState::Patrol);
+}
+
+void AEnemyAIController::OnUnPossess()
+{
+	StopMovement();
+	ControlledEnemy = nullptr;
+	Combat = nullptr;
+	Target = nullptr;
+	Super::OnUnPossess();
 }
 
 void AEnemyAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	if (!Actor || !ControlledEnemy) return;
+	if (!Actor || !ControlledEnemy || ControlledEnemy->IsDead()) return;
 
-	// Only react to the player (adjust tag / class as needed)
-	if (!Actor->ActorHasTag(TEXT("Player"))) return;
+	// Only react to the player
+	const APawn* Other = Cast<APawn>(Actor);
+	if (!Other || !Other->IsPlayerControlled()) return;
 
 	if (Stimulus.WasSuccessfullySensed())
 	{
-		// First time seeing the player → Silent Hill "notice" moment
-		if (!GetBlackboardComponent()->GetValueAsBool(HasSeenPlayerKey))
+		Target = Actor;
+		LastKnownLocation = Actor->GetActorLocation();
+		if (State != EEnemyState::Attack)
 		{
-			// You can play a montage / sound here via the Character
+			SetState(EEnemyState::Chase);
 		}
-
-		SetBlackboardTarget(Actor);
-		ControlledEnemy->SetChaseMode(true);
 	}
-	else
+	else if (Actor == Target)
 	{
-		// Lost sight – keep last known location for a while
-		if (UBlackboardComponent* BB = GetBlackboardComponent())
-		{
-			BB->SetValueAsVector(LastKnownLocationKey, Stimulus.StimulusLocation);
-		}
+		LastKnownLocation = Stimulus.StimulusLocation;
+		Target = nullptr;
+		SetState(EEnemyState::Search);
+	}
+}
 
-		// Optional: clear target after a delay (use a timer for true memory)
-		// For now we clear immediately and let the BT handle LastKnownLocation
-		ClearBlackboardTarget();
+void AEnemyAIController::SetState(EEnemyState NewState)
+{
+	if (NewState == State) return;
+	EnterState(NewState);
+}
+
+void AEnemyAIController::EnterState(EEnemyState NewState)
+{
+	if (!ControlledEnemy) return;
+
+	State = NewState;
+	StateTimer = 0.f;
+
+	switch (State)
+	{
+	case EEnemyState::Patrol:
 		ControlledEnemy->SetChaseMode(false);
+		StopMovement();
+		StateTimer = PatrolWaitTime; // pick a point right away
+		break;
+
+	case EEnemyState::Chase:
+		ControlledEnemy->SetChaseMode(true);
+		StateTimer = 10.f; // path to the target right away
+		break;
+
+	case EEnemyState::Attack:
+		StopMovement();
+		StateTimer = AttackCooldown; // swing right away
+		break;
+
+	case EEnemyState::Search:
+		ControlledEnemy->SetChaseMode(false);
+		MoveToLocation(LastKnownLocation, 60.f, true, true, true);
+		break;
+	}
+
+	if (bDebug && GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Cyan,
+			FString::Printf(TEXT("Enemy: %s"),
+				*StaticEnum<EEnemyState>()->GetNameStringByValue(static_cast<int64>(State))));
 	}
 }
 
-void AEnemyAIController::SetBlackboardTarget(AActor* Target)
+void AEnemyAIController::Tick(float DeltaTime)
 {
-	if (UBlackboardComponent* BB = GetBlackboardComponent())
+	Super::Tick(DeltaTime);
+	if (!ControlledEnemy || ControlledEnemy->IsDead()) return;
+
+	// Stop hunting a dead player
+	if (Target)
 	{
-		BB->SetValueAsObject(TargetActorKey, Target);
-		BB->SetValueAsBool(HasSeenPlayerKey, true);
-		BB->SetValueAsVector(LastKnownLocationKey, Target->GetActorLocation());
+		if (const UPlayerCombatComponent* PlayerCombat = Target->FindComponentByClass<UPlayerCombatComponent>())
+		{
+			if (PlayerCombat->IsDead())
+			{
+				Target = nullptr;
+				SetState(EEnemyState::Patrol);
+			}
+		}
+	}
+
+	switch (State)
+	{
+	case EEnemyState::Patrol: TickPatrol(DeltaTime); break;
+	case EEnemyState::Chase:  TickChase(DeltaTime);  break;
+	case EEnemyState::Attack: TickAttack(DeltaTime); break;
+	case EEnemyState::Search: TickSearch(DeltaTime); break;
 	}
 }
 
-void AEnemyAIController::ClearBlackboardTarget()
+bool AEnemyAIController::PickPatrolPoint(FVector& OutPoint) const
 {
-	if (UBlackboardComponent* BB = GetBlackboardComponent())
+	UNavigationSystemV1* Nav = UNavigationSystemV1::GetCurrent(GetWorld());
+	if (!Nav || !ControlledEnemy) return false;
+
+	FNavLocation Result;
+	if (Nav->GetRandomReachablePointInRadius(ControlledEnemy->HomeLocation, ControlledEnemy->PatrolRadius, Result))
 	{
-		BB->ClearValue(TargetActorKey);
+		OutPoint = Result.Location;
+		return true;
+	}
+	return false;
+}
+
+void AEnemyAIController::TickPatrol(float DeltaTime)
+{
+	if (GetMoveStatus() != EPathFollowingStatus::Idle) return; // still walking
+
+	StateTimer += DeltaTime;
+	if (StateTimer < PatrolWaitTime) return;
+	StateTimer = 0.f;
+
+	FVector Point;
+	if (PickPatrolPoint(Point))
+	{
+		MoveToLocation(Point, 60.f);
+	}
+	else if (bDebug && GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red,
+			TEXT("Enemy can't find a patrol point. Is there a NavMeshBoundsVolume in the level?"));
+	}
+}
+
+void AEnemyAIController::TickChase(float DeltaTime)
+{
+	APawn* Self = GetPawn();
+	if (!Self || !IsValid(Target))
+	{
+		SetState(EEnemyState::Search);
+		return;
+	}
+
+	const float Distance = FVector::Dist(Self->GetActorLocation(), Target->GetActorLocation());
+	if (Distance <= AttackStartDistance)
+	{
+		SetState(EEnemyState::Attack);
+		return;
+	}
+
+	StateTimer += DeltaTime;
+	if (StateTimer >= 0.3f)
+	{
+		StateTimer = 0.f;
+		MoveToActor(Target, AttackStartDistance * 0.7f);
+	}
+}
+
+void AEnemyAIController::TickAttack(float DeltaTime)
+{
+	APawn* Self = GetPawn();
+	if (!Self || !IsValid(Target))
+	{
+		SetState(EEnemyState::Search);
+		return;
+	}
+
+	// Turn slowly toward the target so the player can sidestep a swing
+	FRotator Look = (Target->GetActorLocation() - Self->GetActorLocation()).Rotation();
+	Look.Pitch = 0.f;
+	Look.Roll = 0.f;
+	Self->SetActorRotation(FMath::RInterpTo(Self->GetActorRotation(), Look, DeltaTime, TurnSpeed));
+
+	if (Combat && Combat->IsAttacking())
+	{
+		StateTimer = 0.f;
+		return;
+	}
+
+	StateTimer += DeltaTime;
+	if (StateTimer < AttackCooldown) return;
+
+	const float Distance = FVector::Dist(Self->GetActorLocation(), Target->GetActorLocation());
+	if (Distance > AttackStartDistance * 1.4f)
+	{
+		SetState(EEnemyState::Chase);
+		return;
+	}
+
+	if (Combat)
+	{
+		Combat->StartAttack(Target);
+		StateTimer = 0.f;
+	}
+}
+
+void AEnemyAIController::TickSearch(float DeltaTime)
+{
+	if (GetMoveStatus() != EPathFollowingStatus::Idle) return; // still walking there
+
+	StateTimer += DeltaTime;
+	if (StateTimer >= SearchTime)
+	{
+		SetState(EEnemyState::Patrol);
 	}
 }

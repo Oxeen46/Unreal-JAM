@@ -120,6 +120,17 @@ void AStoryBoardActor::BeginPlay()
 {
 	Super::BeginPlay();
 	BuildSlots();
+	
+	if (UStoryStateSubsystem* Story = GetStory())
+	{
+		if (Board)
+		{
+			for (const int32 Index : Story->GetConfirmedStorylines(Board))
+			{
+				AddConfirmedBlock(Index);
+			}
+		}
+	}
 }
 
 UStoryStateSubsystem* AStoryBoardActor::GetStory() const
@@ -256,15 +267,16 @@ void AStoryBoardActor::RefreshLayout()
 
 void AStoryBoardActor::RefreshPins()
 {
-	const int32 Count = ConfirmedBlocks.Num();
-	for (int32 i = 0; i < Count; ++i)
+	UStoryStateSubsystem* Story = GetStory();
+	const int32 Active = (Story && Board) ? Story->GetActiveStoryline(Board) : INDEX_NONE;
+
+	for (FConfirmedBlock& Block : ConfirmedBlocks)
 	{
-		if (!ConfirmedBlocks[i].Pin) continue;
-		const bool bIsActive = (ConfirmedBlocks[i].StorylineIndex == ActiveStoryline);
-		Tint(ConfirmedBlocks[i].Pin, BasicMat,
-			bIsActive
-			? FLinearColor(1.f, 0.85f, 0.f)   // gold pin = active
-			: FLinearColor(0.3f, 0.3f, 0.3f)); // grey pin = inactive
+		if (!Block.Pin) continue;
+		Tint(Block.Pin, BasicMat,
+			Block.StorylineIndex == Active
+			? FLinearColor(1.f, 0.85f, 0.f)    // gold = active
+			: FLinearColor(0.3f, 0.3f, 0.3f)); // grey = inactive
 	}
 }
 
@@ -328,11 +340,14 @@ void AStoryBoardActor::AddConfirmedBlock(int32 StorylineIndex)
 
 void AStoryBoardActor::HandleBlockClick(int32 StorylineIndex)
 {
+	UStoryStateSubsystem* Story = GetStory();
+	if (!Story || !Board) return;
+
 	// Clicking the active block sets reality to None
-	const int32 NewActive = (StorylineIndex == ActiveStoryline)
-		? INDEX_NONE : StorylineIndex;
-	ActivateStoryline(NewActive);
+	const int32 NewActive = (Story->GetActiveStoryline(Board) == StorylineIndex) ? INDEX_NONE : StorylineIndex;
+	Story->SetActiveStoryline(Board, NewActive);
 	RefreshPins();
+
 	StatusText->SetTextRenderColor(FColor(120, 200, 120));
 	StatusText->SetText(NewActive == INDEX_NONE
 		? FText::FromString(TEXT("Reality cleared."))
@@ -565,25 +580,11 @@ void AStoryBoardActor::TryRewrite()
 		return;
 	}
 
-	for (const FStoryBoardSlot& Slot : Board->Slots)
-	{
-		const FGameplayTag UsedClue = Story->GetPlacedClue(Slot.SlotTag);
-		if (UsedClue.IsValid())
-		{
-			Story->RemoveCollectedClue(UsedClue);   // <-- you need this function
-			Story->ClearSlot(Slot.SlotTag);          // optional but tidy
-		}
-	}
-	// Add to confirmed row if new
 	AddConfirmedBlock(Index);
-
-	// Instantly activate it
-	ActivateStoryline(Index);
 	RefreshPins();
 
 	StatusText->SetTextRenderColor(FColor(120, 200, 120));
 	StatusText->SetText(Board->Storylines[Index].Title);
-
 	ExitBoard();
 }
 // ============================================================
