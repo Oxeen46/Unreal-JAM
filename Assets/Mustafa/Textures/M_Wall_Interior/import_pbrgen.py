@@ -1,4 +1,4 @@
-import os
+﻿import os
 import unreal
 
 PBRGEN = {"name":"M_Wall_Interior","files":{"BaseColor":"T_M_Wall_Interior_BC.png","Normal":"T_M_Wall_Interior_N.png","ORM":"T_M_Wall_Interior_ORM.png","Height":"T_M_Wall_Interior_H.png"},"displacement":0.3891565421106294,"zero":0.5}

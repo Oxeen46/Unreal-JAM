@@ -67,7 +67,10 @@ def import_textures():
     tasks = []
     for name in settings:
         t = unreal.AssetImportTask()
-        t.set_editor_property("filename", os.path.join(TEXDIR, name + ".png"))
+        path = os.path.join(TEXDIR, name + ".jpg")
+        if not os.path.exists(path):
+            path = os.path.join(TEXDIR, name + ".png")
+        t.set_editor_property("filename", path)
         t.set_editor_property("destination_path", TEX)
         t.set_editor_property("automated", True)
         t.set_editor_property("replace_existing", True)

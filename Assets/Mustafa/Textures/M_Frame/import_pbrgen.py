@@ -1,7 +1,7 @@
-import os
+﻿import os
 import unreal
 
-PBRGEN = {"name":"M_Frame","files":{"BaseColor":"T_M_Frame_BC.png","Normal":"T_M_Frame_N.png","ORM":"T_M_Frame_ORM.png","Height":"T_M_Frame_H.png"},"displacement":0.7783130842212588,"zero":0.5}
+PBRGEN = {"name":"M_Frame","files":{"BaseColor":"T_M_Frame_BC.jpg","Normal":"T_M_Frame_N.jpg","ORM":"T_M_Frame_ORM.jpg","Height":"T_M_Frame_H.jpg"},"displacement":0.7783130842212588,"zero":0.5}
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = "/Game/PBRgen"

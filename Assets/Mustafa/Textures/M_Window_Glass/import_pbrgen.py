@@ -1,7 +1,7 @@
-import os
+﻿import os
 import unreal
 
-PBRGEN = {"name":"M_Window_Glass","files":{"BaseColor":"T_M_Window_Glass_BC.png","Normal":"T_M_Window_Glass_N.png","ORM":"T_M_Window_Glass_ORM.png","Height":"T_M_Window_Glass_H.png"},"displacement":0,"zero":0.5}
+PBRGEN = {"name":"M_Window_Glass","files":{"BaseColor":"T_M_Window_Glass_BC.jpg","Normal":"T_M_Window_Glass_N.jpg","ORM":"T_M_Window_Glass_ORM.jpg","Height":"T_M_Window_Glass_H.jpg"},"displacement":0,"zero":0.5}
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = "/Game/PBRgen"
