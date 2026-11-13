@@ -1,9 +1,9 @@
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "PlayerCombatComponent.generated.h"
+
 
 UCLASS(ClassGroup=(Combat), meta=(BlueprintSpawnableComponent))
 class EPICAIMEGAJAM_API UPlayerCombatComponent : public UActorComponent
@@ -13,36 +13,95 @@ class EPICAIMEGAJAM_API UPlayerCombatComponent : public UActorComponent
 public:
 	UPlayerCombatComponent();
 
+	// Hook this to your attack input
 	UFUNCTION(BlueprintCallable, Category="Combat")
-	void StartBlocking();
+	void TryLightAttack();
 
+	// Called by enemies
 	UFUNCTION(BlueprintCallable, Category="Combat")
-	void StopBlocking();
-
-	UFUNCTION(BlueprintCallable, Category="Combat")
-	float ReceiveCombatHit(float BaseDamage, AActor* DamageCauser);
+	void ReceiveCombatHit(float Damage, AActor* DamageInstigator);
 
 	UFUNCTION(BlueprintPure, Category="Combat")
-	bool IsBlocking() const { return bIsBlocking; }
+	float GetHealth() const { return Health; }
 
+	UFUNCTION(BlueprintPure, Category="Combat")
+	bool IsDead() const { return bIsDead; }
+
+	UFUNCTION(BlueprintPure, Category="Combat")
+	bool IsAttacking() const { return bIsAttacking; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat|Health")
+	float MaxHealth = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat|Health")
+	float HitInvulnerableTime = 0.6f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat|Attack")
+	float AttackDamage = 25.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat|Attack")
+	float AttackRange = 220.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat|Attack")
+	float AttackRadius = 70.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat|Timing")
+	float WindUpTime = 0.25f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat|Timing")
+	float RecoveryTime = 0.45f;
+
+	// Shows the swing's sweep and your health on screen while testing
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat|Debug")
+	bool bDebug = true;
+	
+	// Shown while the game reloads. Put your film reel animation in this widget.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat|Death")
+	TSubclassOf<UUserWidget> DeathScreenClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat|Death")
+	float DeathFadeTime = 1.2f;
+
+	// How long the death screen stays up before reloading. Match your animation length.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat|Death")
+	float DeathScreenTime = 4.f;
+
+	UFUNCTION(BlueprintCallable, Category="Combat")
+	void Heal(float Amount);
+	
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Combat|Blocking")
-	float PerfectBlockWindow = 0.2f;
+	virtual void BeginPlay() override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Combat|Blocking")
-	float BlockDamageReduction = 0.6f;
-
-	UPROPERTY(BlueprintReadOnly, Category="Combat|Blocking")
-	bool bIsBlocking = false;
-
-	float BlockStartedAt = -1.0f;
+	// Hooks for animation, sound and camera effects (implement in Blueprint)
+	UFUNCTION(BlueprintImplementableEvent, Category="Combat")
+	void OnSwingStarted();
 
 	UFUNCTION(BlueprintImplementableEvent, Category="Combat")
-	void OnPerfectBlock(AActor* Attacker);
+	void OnSwingHit(AActor* Target);
 
 	UFUNCTION(BlueprintImplementableEvent, Category="Combat")
-	void OnNormalBlock(AActor* Attacker, float RemainingDamage);
+	void OnSwingMissed();
 
 	UFUNCTION(BlueprintImplementableEvent, Category="Combat")
-	void OnHitReceived(AActor* Attacker, float Damage);
+	void OnDamaged(float Damage, AActor* Source);
+
+	UFUNCTION(BlueprintImplementableEvent, Category="Combat")
+	void OnDied();
+
+private:
+	void ExecuteSwing();
+	void FinishSwing();
+
+	float Health = 100.f;
+	float InvulnerableUntil = 0.f;
+	bool bIsAttacking = false;
+	bool bIsDead = false;
+
+	FTimerHandle SwingTimer;
+	
+	void BeginDeathSequence();
+	void ShowDeathScreen();
+	void Respawn();
+
+	FTimerHandle DeathTimer;
 };
