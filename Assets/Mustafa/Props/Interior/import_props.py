@@ -18,13 +18,10 @@ Interactive part sets (Fridge, KitchenCounter, Wardrobe, Nightstand): every part
   Doors: pivot = hinge (rotate around Z). Drawers: pivot = front-face centre (slide along +X).
   assembly.json holds the rest-pose offset of each part relative to its set root (Blender metres).
   Unreal conversion: x*100, y*-100, z*100, yaw = -rot_z, pitch = -rot_y, roll = -rot_x.
-  spawn_preview() (not called automatically) lays out every prop and the assembled sets in the current level.
 
 M_TV_Screen parameters: Power (0/1), Picture (Texture2D / Media Texture), PictureGain, StaticAmount, StaticSpeed,
   ScanFreq, ScanStrength, Vignette, Tint, Glow.
 """
-import json
-import math
 import os
 import runpy
 import unreal
@@ -32,7 +29,8 @@ import unreal
 HERE = os.path.dirname(os.path.abspath(__file__))
 FBX_DIR = os.path.join(HERE, "FBX")
 TEX_DIR = os.path.normpath(os.path.join(HERE, "..", "..", "Textures"))
-ROOT = "/Game/Interior"
+ROOT = os.environ.get("INTERIOR_ROOT", "/Game/Interior")  # e.g. /Game/Developers/mustafa/Interior for a personal sandbox
+PBR_ROOT = os.environ.get("INTERIOR_PBR_ROOT", "/Game/PBRgen")
 MESH_DIR = ROOT + "/Meshes"
 MAT_DIR = ROOT + "/Materials"
 
@@ -102,8 +100,10 @@ def build_pbrgen():
         if not os.path.exists(script):
             unreal.log_warning("Interior: missing PBRgen script " + script)
             continue
-        runpy.run_path(script, run_name="__main__")
-        mi = ASSETS.load_asset("/Game/PBRgen/%s/MI_%s" % (name, name))
+        with open(script, encoding="utf-8-sig") as fh:
+            text = fh.read().lstrip("\ufeff").replace('ROOT = "/Game/PBRgen"', 'ROOT = "%s"' % PBR_ROOT)
+        exec(compile(text, script, "exec"), {"__file__": script, "__name__": "__main__"})
+        mi = ASSETS.load_asset("%s/%s/MI_%s" % (PBR_ROOT, name, name))
         if mi is None:
             unreal.log_warning("Interior: PBRgen instance not found for " + name)
             continue
@@ -290,52 +290,6 @@ def assign_materials(names, mapping):
         unreal.log_warning("Interior: unmapped material slots: %s" % sorted(missing))
 
 
-# ---------------------------------------------------------------- preview
-def _ue_loc(m):
-    return unreal.Vector(m[0] * 100.0, -m[1] * 100.0, m[2] * 100.0)
-
-
-def _ue_rot(r):
-    return unreal.Rotator(roll=-math.degrees(r[0]), pitch=-math.degrees(r[1]), yaw=-math.degrees(r[2]))
-
-
-def spawn_preview(origin=(0.0, 0.0, 0.0), spacing=260.0):
-    """Lay out every prop (and the assembled interactive sets, closed) along +Y in the current level."""
-    eas = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
-    with open(os.path.join(HERE, "assembly.json"), encoding="utf-8") as fh:
-        asm = json.load(fh)["assemblies"]
-    in_sets = {p for parts in asm.values() for p in parts}
-    y = origin[1]
-    spawned = []
-    for f in sorted(os.listdir(FBX_DIR)):
-        n = os.path.splitext(f)[0]
-        if n in in_sets:
-            continue
-        sm = ASSETS.load_asset(MESH_DIR + "/" + n)
-        a = eas.spawn_actor_from_class(unreal.StaticMeshActor, unreal.Vector(origin[0], y, origin[2]))
-        a.static_mesh_component.set_static_mesh(sm)
-        a.set_actor_label(n)
-        spawned.append(a)
-        y += spacing
-    for root_name, parts in asm.items():
-        base = unreal.Vector(origin[0], y, origin[2])
-        root_actor = None
-        for pname, tr in parts.items():
-            sm = ASSETS.load_asset(MESH_DIR + "/" + pname)
-            loc = _ue_loc(tr["location_m"]) + base
-            a = eas.spawn_actor_from_class(unreal.StaticMeshActor, loc, _ue_rot(tr["rot_euler_rad"]))
-            a.static_mesh_component.set_static_mesh(sm)
-            a.set_actor_label(pname)
-            if root_actor is None:
-                root_actor = a
-            else:
-                a.attach_to_actor(root_actor, "", unreal.AttachmentRule.KEEP_WORLD, unreal.AttachmentRule.KEEP_WORLD,
-                                  unreal.AttachmentRule.KEEP_WORLD, False)
-            spawned.append(a)
-        y += spacing
-    return spawned
-
-
 def main():
     pbr = build_pbrgen()
     basic = build_basic_master()
@@ -348,3 +302,4 @@ def main():
 
 
 main()
+
