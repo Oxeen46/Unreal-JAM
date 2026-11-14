@@ -16,6 +16,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "InputCoreTypes.h"
 #include "TimerManager.h"
+#include "GameSettingsSubsystem.h"
 
 namespace
 {
@@ -734,10 +735,18 @@ void AStoryBoardActor::TickFlip(float DeltaTime)
 		BuildBoard();
 	}
 
-	// A smooth dip to darkness and back. Never brighter than normal.
+	float Intensity = 1.f;
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (const UGameSettingsSubsystem* Settings = GI->GetSubsystem<UGameSettingsSubsystem>())
+		{
+			Intensity = Settings->GetRealityEffect();
+		}
+	}
+
 	const float Dip = FMath::Square(FMath::Sin(PI * T));
-	const float Flutter = 1.f + FlutterAmount * FMath::Sin(2.f * PI * 3.f * T);
-	CurrentDim = FMath::Clamp(1.f - FlipDepth * Dip * Flutter, 0.f, 1.f);
+	const float Flutter = 1.f + FlutterAmount * Intensity * FMath::Sin(2.f * PI * 3.f * T);
+	CurrentDim = FMath::Clamp(1.f - FlipDepth * Intensity * Dip * Flutter, 0.f, 1.f);
 	ApplyDim(CurrentDim);
 
 	if (T >= 1.f)
