@@ -1,0 +1,217 @@
+{
+ "note": "Blender metre, on +X, Z yukari. Unreal: x*100, y*-100, z*100; yaw=-rot_z_deg, pitch=-rot_y_deg. Parcalar kapali modellenir (pivot mente\u015fe / cekmece on yuz). Bu pozlar kapali/rest poz.",
+ "assemblies": {
+  "SM_Fridge_Root": {
+   "SM_Fridge_Body": {
+    "location_m": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SM_Fridge_Door_Freezer": {
+    "location_m": [
+     0.37,
+     -0.32,
+     1.265
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SM_Fridge_Door_Lower": {
+    "location_m": [
+     0.37,
+     -0.32,
+     0.055
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SM_Fridge_Shelf_A": {
+    "location_m": [
+     -0.02,
+     0.0,
+     0.42
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SM_Fridge_Shelf_B": {
+    "location_m": [
+     -0.02,
+     0.0,
+     1.0
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.22,
+     0.0
+    ]
+   }
+  },
+  "SM_KitchenCounter_Root": {
+   "SM_KitchenCounter_Body": {
+    "location_m": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SM_KitchenCounter_Door_L": {
+    "location_m": [
+     0.31,
+     -0.3,
+     0.12
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SM_KitchenCounter_Door_R": {
+    "location_m": [
+     0.31,
+     0.89,
+     0.12
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SM_KitchenCounter_Drawer_Bottom": {
+    "location_m": [
+     0.31,
+     -0.595,
+     0.28
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SM_KitchenCounter_Drawer_Top": {
+    "location_m": [
+     0.31,
+     -0.595,
+     0.64
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "SM_Wardrobe_Root": {
+   "SM_Wardrobe_Body": {
+    "location_m": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SM_Wardrobe_Door_L": {
+    "location_m": [
+     0.29,
+     -0.595,
+     0.32
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SM_Wardrobe_Door_R": {
+    "location_m": [
+     0.29,
+     0.595,
+     0.32
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SM_Wardrobe_Drawer": {
+    "location_m": [
+     0.29,
+     0.0,
+     0.2
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "SM_Nightstand_Root": {
+   "SM_Nightstand_Body": {
+    "location_m": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SM_Nightstand_Door": {
+    "location_m": [
+     0.21,
+     0.2275,
+     0.155
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "SM_Nightstand_Drawer": {
+    "location_m": [
+     0.21,
+     0.0,
+     0.47
+    ],
+    "rot_euler_rad": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  }
+ }
+}

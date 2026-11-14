@@ -3,7 +3,6 @@
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
 #include "InteractableInterface.h"
-#include "StoryBoardData.h"
 #include "StoryBoardActor.generated.h"
 
 class USceneComponent;
@@ -12,6 +11,9 @@ class UStaticMeshComponent;
 class UTextRenderComponent;
 class UCameraComponent;
 class UMaterialInterface;
+class UMaterialInstanceDynamic;
+class UActorComponent;
+class UStoryBoardData;
 class UStoryStateSubsystem;
 class APlayerController;
 
@@ -19,28 +21,37 @@ USTRUCT()
 struct FBoardNote
 {
 	GENERATED_BODY()
+
 	UPROPERTY() FGameplayTag Clue;
 	UPROPERTY() TObjectPtr<USceneComponent> Root;
 	UPROPERTY() TObjectPtr<UStaticMeshComponent> Mesh;
-	UPROPERTY() TObjectPtr<UTextRenderComponent> Text;
 };
 
 USTRUCT()
-struct FBoardSlotVisual
+struct FBoardPanel
 {
 	GENERATED_BODY()
+
 	UPROPERTY() TObjectPtr<UStaticMeshComponent> Mesh;
-	UPROPERTY() TObjectPtr<UTextRenderComponent> Text;
+	UPROPERTY() int32 StorylineIndex = INDEX_NONE;
 };
 
 USTRUCT()
-struct FConfirmedBlock
+struct FDimMesh
 {
 	GENERATED_BODY()
-	int32 StorylineIndex = INDEX_NONE;
-	UPROPERTY() TObjectPtr<UStaticMeshComponent> Mesh;
+
+	UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> MID;
+	UPROPERTY() FLinearColor Base = FLinearColor::White;
+};
+
+USTRUCT()
+struct FDimText
+{
+	GENERATED_BODY()
+
 	UPROPERTY() TObjectPtr<UTextRenderComponent> Text;
-	UPROPERTY() TObjectPtr<UStaticMeshComponent> Pin; // active indicator
+	UPROPERTY() FColor Base = FColor::White;
 };
 
 UCLASS()
@@ -61,74 +72,133 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Board")
 	FText InteractionText = FText::FromString(TEXT("Open storyboard"));
 
+	// Camera blend in and out of the board
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Board")
 	float BlendTime = 0.8f;
 
+	// How fast the camera glides between storyboards and zooms in and out
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Board")
+	float ZoomSpeed = 4.f;
+
+	// Reality change effect: a smooth dip to darkness and back. Never brighter than normal.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Reality Change")
+	float FlipDuration = 0.8f;
+
+	// How dark it gets (0 = no dip, 1 = fully dark)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Reality Change")
+	float FlipDepth = 0.9f;
+
+	// Slight unsteadiness in the dip. Set to 0 for a perfectly smooth fade.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Reality Change")
+	float FlutterAmount = 0.15f;
+
+	// Hooks for your distortion effect, sound and so on (use them in the Blueprint)
+	UFUNCTION(BlueprintImplementableEvent, Category="Reality Change")
+	void OnFlipStarted();
+
+	UFUNCTION(BlueprintImplementableEvent, Category="Reality Change")
+	void OnFlipFinished();
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
-	// Build
-	void BuildSlots();
-	void BuildNotes();
-	void DestroyNotes();
-	void RefreshLayout();
-	void RefreshPins();
+	// Building
+	void LayoutGrid();
+	void BuildBoard();
+	void BuildCluster(int32 StorylineIndex);
+	void BuildTray();
+	void ClearBoard();
+	UStaticMeshComponent* AddCube(USceneComponent* Parent, const FVector& Loc, const FVector& Scale, const FLinearColor& Color, bool bClickable);
+	UTextRenderComponent* AddText(USceneComponent* Parent, const FVector& Loc, const FText& Text, float Size, FColor Color);
+	USceneComponent* AddNote(USceneComponent* Parent, const FVector& Loc, FGameplayTag Clue, int32 Order, bool bClickable);
+	int32 NoteOrder(FGameplayTag Clue) const;
+	bool IsRelevantClue(FGameplayTag Clue) const;
+	FVector ClusterOrigin(int32 StorylineIndex) const;
+	TArray<int32> RevealedList() const;
+	FText PickDescription(int32 StorylineIndex) const;
+	void ApplyDim(float Dim);
+
+	// Camera and selection
+	void UpdateCameraTargets();
+	void UpdateHint();
+	void SelectStoryline(int32 Index, bool bZoomIn);
+	void StepSelection(int32 Direction);
+	void SetOverview(bool bNewOverview);
 
 	// Flow
 	void EnterBoard(APlayerController* PC);
 	void ExitBoard();
 	void FinishExit();
 
-	// Drag
+	// Reality change
+	void StartFlip();
+	void TickFlip(float DeltaTime);
+	void ToggleActive();
+
+	// Dragging
 	void BeginDrag();
 	void UpdateDrag();
 	void EndDrag();
 
-	// Logic
-	void TryRewrite();
-	void ActivateStoryline(int32 Index);
-	int32 GetActiveStoryline() const;
-
-	// Block row
-	void AddConfirmedBlock(int32 StorylineIndex);
-	void HandleBlockClick(int32 StorylineIndex);
-
+	void SetStatus(const FText& Text, FColor Color);
 	UStoryStateSubsystem* GetStory() const;
 
-	// Screen fade helpers
-	void StartScreenFadeOut();
-	void StartScreenFadeIn();
-	void OnFadeOutFinished();
-	void StartScreenFadeOutForExit();
-	void OnFadeOutFinishedForExit();
+	UFUNCTION()
+	void HandleClueCollected(FGameplayTag Clue);
 
-	// Components
-	UPROPERTY(VisibleAnywhere) TObjectPtr<USceneComponent> SceneRoot;
-	UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> BoardMesh;
-	UPROPERTY(VisibleAnywhere) TObjectPtr<UCameraComponent> BoardCamera;
-	UPROPERTY(VisibleAnywhere) TObjectPtr<UTextRenderComponent> TitleText;
-	UPROPERTY(VisibleAnywhere) TObjectPtr<UTextRenderComponent> StatusText;
-	UPROPERTY(VisibleAnywhere) TObjectPtr<UTextRenderComponent> HintText;
+	UPROPERTY(VisibleAnywhere, Category="Board") TObjectPtr<USceneComponent> SceneRoot;
+	UPROPERTY(VisibleAnywhere, Category="Board") TObjectPtr<UStaticMeshComponent> BoardMesh;
+	UPROPERTY(VisibleAnywhere, Category="Board") TObjectPtr<USceneComponent> ContentRoot;
+	UPROPERTY(VisibleAnywhere, Category="Board") TObjectPtr<USceneComponent> FocusRoot;
+	UPROPERTY(VisibleAnywhere, Category="Board") TObjectPtr<UCameraComponent> BoardCamera;
+	UPROPERTY(VisibleAnywhere, Category="Board") TObjectPtr<UTextRenderComponent> StatusText;
+	UPROPERTY(VisibleAnywhere, Category="Board") TObjectPtr<UTextRenderComponent> HintText;
 
 	UPROPERTY() TObjectPtr<UStaticMesh> CubeMesh;
 	UPROPERTY() TObjectPtr<UMaterialInterface> BasicMat;
-	UPROPERTY() TArray<FBoardSlotVisual> SlotVisuals;
-	UPROPERTY() TArray<FBoardNote> Notes;
-	UPROPERTY() TArray<FConfirmedBlock> ConfirmedBlocks;
+	UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> BoardMID;
 	UPROPERTY() TObjectPtr<APlayerController> ActivePC;
 
-	FTimerHandle ExitTimer;
-	FTimerHandle FadeTimer;
+	UPROPERTY() TArray<TObjectPtr<UActorComponent>> BoardComponents;
+	UPROPERTY() TArray<FBoardNote> Notes;
+	UPROPERTY() TArray<FBoardPanel> Panels;
+	UPROPERTY() TArray<FDimMesh> DimMeshes;
+	UPROPERTY() TArray<FDimText> DimTexts;
 
+	FTimerHandle ExitTimer;
+
+	// Layout
+	int32 GridCols = 1;
+	int32 GridRows = 1;
+	float CellWidth = 680.f;
+	float WallWidth = 800.f;
+	float WallHeight = 440.f;
+	float OverviewDist = 600.f;
+
+	// State
+	int32 Selected = INDEX_NONE;
+	int32 DraggedIndex = INDEX_NONE;
 	bool bActive = false;
+	bool bOverview = false;
+	float InputReadyTime = 0.f;
+
+	FVector CamLoc = FVector(340.f, 0.f, 20.f);
+	FVector TargetCamLoc = FVector(340.f, 0.f, 20.f);
+	FVector FocusLoc = FVector::ZeroVector;
+
+	// Input edges
 	bool bPrevLMB = false;
 	bool bPrevEnter = false;
 	bool bPrevBack = false;
-	int32 DraggedIndex = INDEX_NONE;
-	float InputReadyTime = 0.f;
-	float BoardWidth = 600.f;
-	int32 ActiveStoryline = INDEX_NONE;
+	bool bPrevLeft = false;
+	bool bPrevRight = false;
+	bool bPrevZ = false;
 
-	TWeakObjectPtr<APawn> HiddenPawn;
+	// Reality change
+	bool bFlipping = false;
+	bool bFlipSwapped = false;
+	float FlipElapsed = 0.f;
+	float CurrentDim = 1.f;
 };
