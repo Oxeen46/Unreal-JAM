@@ -1,6 +1,8 @@
 #include "InventoryRowWidget.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
+#include "Components/Image.h"
+#include  "Engine/Texture2D.h"
 
 void UInventoryRowWidget::NativeOnInitialized()
 {
@@ -8,10 +10,23 @@ void UInventoryRowWidget::NativeOnInitialized()
 	if (RowButton) RowButton->OnClicked.AddDynamic(this, &UInventoryRowWidget::HandleClicked);
 }
 
-void UInventoryRowWidget::SetData(int32 InIndex, const FText& Label, bool bSelected)
+void UInventoryRowWidget::SetData(int32 InIndex, const FText& Label, bool bSelected, UTexture2D* Icon)
 {
 	Index = InIndex;
 	if (RowText) RowText->SetText(Label);
+
+	if (RowIcon)
+	{
+		if (Icon)
+		{
+			RowIcon->SetBrushFromTexture(Icon);
+			RowIcon->SetVisibility(ESlateVisibility::HitTestInvisible);
+		}
+		else
+		{
+			RowIcon->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
 	SetSelected(bSelected);
 }
 

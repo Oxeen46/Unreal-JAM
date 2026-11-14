@@ -3,6 +3,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/Engine.h"
+#include "Engine/Texture2D.h"
 #include "StoryStateSubsystem.h"
 
 AClueActor::AClueActor()
@@ -33,7 +34,7 @@ void AClueActor::Interact_Implementation(AActor* Interactor)
 	{
 		if (UStoryStateSubsystem* Story = GI->GetSubsystem<UStoryStateSubsystem>())
 		{
-			Story->CollectClue(ClueFact, ClueTitle, ClueText);
+			Story->CollectClue(ClueFact, ClueTitle, ClueText, ClueIcon);
 		}
 	}
 

@@ -10,6 +10,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "InputCoreTypes.h"
+#include "Components/Image.h"
 
 namespace
 {
@@ -84,9 +85,9 @@ void UInventoryWidget::Rebuild()
 			UInventoryRowWidget* Row = CreateWidget<UInventoryRowWidget>(this, RowClass);
 			if (!Row) continue;
 
-			Row->SetData(i, Entries[i].Label, i == Selected);
+			Row->SetData(i, Entries[i].Label, i == Selected, EntryIcon(Entries[i]));
 			Row->OnRowClicked.BindUObject(this, &UInventoryWidget::HandleRowClicked);
-			ItemList->AddChildToVerticalBox(Row);
+			ItemList->AddChild(Row);
 		}
 	}
 
@@ -178,7 +179,8 @@ void UInventoryWidget::BuildEntries()
 
 void UInventoryWidget::UpdateDetails()
 {
-	if (!DetailTitle || !DetailBody || !ActionButton || !ActionText) return;
+	if (!DetailTitle || !DetailBody || !ActionButton || !ActionText) 
+		return;
 
 	if (!Entries.IsValidIndex(Selected))
 	{
@@ -191,10 +193,23 @@ void UInventoryWidget::UpdateDetails()
 	const FEntry& Entry = Entries[Selected];
 	DetailTitle->SetText(Entry.Title);
 	DetailBody->SetText(Entry.Body);
-
+	DetailIcon->SetVisibility(ESlateVisibility::Collapsed);
+	
 	if (Entry.ActionLabel.IsEmpty())
 	{
 		ActionButton->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	if (DetailIcon)
+	{
+		if (UTexture2D* Icon = EntryIcon(Entry))
+		{
+			DetailIcon->SetBrushFromTexture(Icon);
+			DetailIcon->SetVisibility(ESlateVisibility::HitTestInvisible);
+		}
+		else
+		{
+			DetailIcon->SetVisibility(ESlateVisibility::Collapsed);
+		}
 	}
 	else
 	{
@@ -260,4 +275,10 @@ void UInventoryWidget::HandleAction()
 		Inventory->EquipWeapon(bEquipped ? nullptr : Item);
 	}
 	Rebuild();
+}
+UTexture2D* UInventoryWidget::EntryIcon(const FEntry& Entry) const
+{
+	if (CurrentTab != EInventoryTab::Notes) return nullptr;
+	UStoryStateSubsystem* Story = InvUI_GetStory(this);
+	return Story ? Story->GetClueIcon(Entry.Tag) : nullptr;
 }

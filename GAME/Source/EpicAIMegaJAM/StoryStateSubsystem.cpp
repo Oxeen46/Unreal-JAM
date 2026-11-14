@@ -17,7 +17,16 @@ namespace
 	}
 }
 
-// ---------------- Facts ----------------
+void UStoryStateSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UStoryStateSubsystem* Story = GI->GetSubsystem<UStoryStateSubsystem>())
+		{
+			Story->ResetAllState();
+		}
+	}	
+}
 
 void UStoryStateSubsystem::SetFact(FGameplayTag Fact, bool bValue)
 {
@@ -39,14 +48,24 @@ bool UStoryStateSubsystem::HasFact(FGameplayTag Fact) const
 
 // ---------------- Clues ----------------
 
-void UStoryStateSubsystem::CollectClue(FGameplayTag Clue, const FText& Title, const FText& Text)
+void UStoryStateSubsystem::CollectClue(FGameplayTag Clue, const FText& Title, const FText& Text, UTexture2D* Icon)
 {
 	if (!Clue.IsValid() || CollectedClues.Contains(Clue)) return;
 
 	CollectedClues.Add(Clue);
 	ClueTitles.Add(Clue, Title);
 	ClueTexts.Add(Clue, Text);
+	if (Icon)
+	{
+		ClueIcons.Add(Clue, TSoftObjectPtr<UTexture2D>(Icon));
+	}
 	OnClueCollected.Broadcast(Clue);
+}
+
+UTexture2D* UStoryStateSubsystem::GetClueIcon(FGameplayTag Clue) const
+{
+	const TSoftObjectPtr<UTexture2D>* Found = ClueIcons.Find(Clue);
+	return Found ? Found->LoadSynchronous() : nullptr;
 }
 
 bool UStoryStateSubsystem::HasClue(FGameplayTag Clue) const

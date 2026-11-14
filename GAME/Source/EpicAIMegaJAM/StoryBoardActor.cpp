@@ -17,6 +17,9 @@
 #include "InputCoreTypes.h"
 #include "TimerManager.h"
 #include "GameSettingsSubsystem.h"
+#include "Components/WidgetComponent.h"
+#include "NoteCardWidget.h"
+#include "Engine/Texture2D.h"
 
 namespace
 {
@@ -24,16 +27,18 @@ namespace
 	// Each storyboard is a cluster laid out around its own origin.
 	constexpr float SlotSpacing = 130.f;
 	constexpr float SlotX = 2.f;
-	constexpr float SlotZ = 45.f;
 	constexpr float NoteX = 6.f;
-	constexpr float TrayZ = -35.f;
-	constexpr float TrayRowSpacing = 48.f;
 	constexpr float NoteSpacing = 70.f;
 	constexpr float DragX = 14.f;
 	constexpr float SnapDistance = 60.f;
-	constexpr float ViewZ = 20.f;       // height of a cluster's view center above its origin
-	constexpr float CellHeight = 380.f;
 	constexpr float CellPadding = 160.f;
+	constexpr float SlotZ = 40.f;
+	constexpr float TrayZ = -55.f;
+	constexpr float TrayRowSpacing = 85.f;
+	constexpr float ViewZ = -8.f;
+	constexpr float CellHeight = 480.f;
+	constexpr float NoteWidth = 60.f;
+	constexpr float NoteHeight = 70.f;
 	constexpr int32 MaxGridColumns = 2;
 
 	// Warm and dark, easy on the eyes
@@ -278,12 +283,42 @@ USceneComponent* AStoryBoardActor::AddNote(USceneComponent* Parent, const FVecto
 	Root->SetRelativeLocation(Loc);
 	BoardComponents.Add(Root);
 
-	UStaticMeshComponent* Mesh = AddCube(Root, FVector::ZeroVector, FVector(0.015f, 0.55f, 0.38f), NoteColor, bClickable);
+	// The paper
+	UStaticMeshComponent* Mesh = AddCube(Root, FVector::ZeroVector, FVector(0.015f, NoteWidth / 100.f, NoteHeight / 100.f), NoteColor, bClickable);
 
 	UStoryStateSubsystem* Story = GetStory();
 	const FText Title = Story ? Story->GetClueTitle(Clue) : FText::GetEmpty();
-	const FString Name = Title.IsEmpty() ? BoardShortName(Clue) : Title.ToString();
-	AddText(Root, FVector(1.f, 0.f, 0.f), FText::FromString(FString::Printf(TEXT("#%d\n%s"), Order, *Name)), 6.f, FColor(35, 28, 18));
+	const FText Name = Title.IsEmpty() ? FText::FromString(BoardShortName(Clue)) : Title;
+	UTexture2D* Icon = Story ? Story->GetClueIcon(Clue) : nullptr;
+
+	if (NoteCardClass)
+	{
+		// The card: the icon with the name under it, drawn in front of the paper
+		UWidgetComponent* Card = NewObject<UWidgetComponent>(this);
+		Card->SetupAttachment(Root);
+		Card->SetWidgetSpace(EWidgetSpace::World);
+		Card->SetWidgetClass(NoteCardClass);
+		Card->SetDrawSize(FVector2D(240.f, 280.f));
+		Card->SetRelativeScale3D(FVector(1.f, 0.25f, 0.25f)); // 240 x 280 pixels = 60 x 70 units
+		Card->SetRelativeLocation(FVector(1.f, 0.f, 0.f));
+		Card->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Card->SetRedrawTime(0.25f);
+		Card->RegisterComponent();
+		Card->InitWidget();
+
+		if (UNoteCardWidget* CardWidget = Cast<UNoteCardWidget>(Card->GetUserWidgetObject()))
+		{
+			CardWidget->SetNote(Icon, Name, Order);
+		}
+
+		BoardComponents.Add(Card);
+		DimWidgets.Add(Card);
+	}
+	else
+	{
+		// No card widget set yet: fall back to plain text
+		AddText(Root, FVector(1.f, 0.f, 0.f), FText::FromString(FString::Printf(TEXT("#%d\n%s"), Order, *Name.ToString())), 6.f, FColor(35, 28, 18));
+	}
 
 	if (bClickable)
 	{
@@ -338,6 +373,7 @@ void AStoryBoardActor::ClearBoard()
 	Panels.Reset();
 	DimMeshes.Reset();
 	DimTexts.Reset();
+	DimWidgets.Reset();
 	DraggedIndex = INDEX_NONE;
 }
 
@@ -406,7 +442,7 @@ void AStoryBoardActor::BuildCluster(int32 StorylineIndex)
 	const float Width = PageWidth(N);
 
 	// The backdrop card. Click it to zoom to this storyboard.
-	UStaticMeshComponent* Panel = AddCube(ContentRoot, O + FVector(1.f, 0.f, 25.f), FVector(0.012f, Width / 100.f, 3.06f),
+	UStaticMeshComponent* Panel = AddCube(ContentRoot, O + FVector(1.f, 0.f, -7.f), FVector(0.012f, Width / 100.f, 3.95f),
 		StorylineIndex == Selected ? PanelSelectedColor : PanelColor, true);
 	FBoardPanel PanelEntry;
 	PanelEntry.Mesh = Panel;
@@ -414,34 +450,34 @@ void AStoryBoardActor::BuildCluster(int32 StorylineIndex)
 	Panels.Add(PanelEntry);
 
 	// Big white title ("?" until the storyboard is complete)
-	AddText(ContentRoot, O + FVector(3.f, 0.f, 130.f), bUnlocked ? Line.Title : FText::FromString(TEXT("?")), 20.f, TitleColor);
+	AddText(ContentRoot, O + FVector(3.f, 0.f, 140.f), bUnlocked ? Line.Title : FText::FromString(TEXT("?")), 20.f, TitleColor);
 
 	if (bIsActive)
 	{
-		AddCube(ContentRoot, O + FVector(6.f, 0.f, 165.f), FVector(0.06f, 0.1f, 0.1f), PinColor, false);
+		AddCube(ContentRoot, O + FVector(6.f, 0.f, 175.f), FVector(0.06f, 0.1f, 0.1f), PinColor, false);
 	}
 
 	// Your own description, based on the last found or placed clue
 	const FText Description = PickDescription(StorylineIndex);
 	if (!Description.IsEmpty())
 	{
-		AddText(ContentRoot, O + FVector(3.f, 0.f, 100.f), Description, 6.f, FColor(190, 175, 150));
+		AddText(ContentRoot, O + FVector(3.f, 0.f, 108.f), Description, 6.f, FColor(190, 175, 150));
 	}
 
 	if (bIsActive)
 	{
-		AddText(ContentRoot, O + FVector(3.f, 0.f, 84.f), FText::FromString(TEXT("ACTIVE REALITY")), 5.5f, Gold);
+		AddText(ContentRoot, O + FVector(3.f, 0.f, 92.f), FText::FromString(TEXT("ACTIVE REALITY")), 5.5f, Gold);
 	}
 	else if (bUnlocked && bActive)
 	{
-		AddText(ContentRoot, O + FVector(3.f, 0.f, 84.f), FText::FromString(TEXT("Press Enter to make this the reality")), 5.5f, FColor(150, 140, 120));
+		AddText(ContentRoot, O + FVector(3.f, 0.f, 92.f), FText::FromString(TEXT("Press Enter to make this the reality")), 5.5f, FColor(150, 140, 120));
 	}
 
 	// The lineup: numbered slots, with the placed notes on them
 	for (int32 i = 0; i < N; ++i)
 	{
 		const FVector Pos = O + SlotLocal(i, N);
-		AddCube(ContentRoot, Pos, FVector(0.01f, 1.f, 0.55f), SlotColor, false);
+		AddCube(ContentRoot, Pos, FVector(0.01f, 1.f, 0.84f), SlotColor, false);
 		AddText(ContentRoot, Pos + FVector(1.f, 0.f, 0.f), FText::FromString(FString::FromInt(i + 1)), 14.f, FColor(95, 75, 60));
 
 		if (i < Progress)
@@ -500,6 +536,13 @@ void AStoryBoardActor::ApplyDim(float Dim)
 		{
 			Entry.Text->SetTextRenderColor(FColor(
 				static_cast<uint8>(Entry.Base.R * Dim), static_cast<uint8>(Entry.Base.G * Dim), static_cast<uint8>(Entry.Base.B * Dim), 255));
+		}
+	}
+	for (UWidgetComponent* Card : DimWidgets)
+	{
+		if (IsValid(Card))
+		{
+			Card->SetTintColorAndOpacity(FLinearColor(Dim, Dim, Dim, 1.f));
 		}
 	}
 
