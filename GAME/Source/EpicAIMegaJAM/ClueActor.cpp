@@ -11,6 +11,21 @@ AClueActor::AClueActor()
 	SetRootComponent(Mesh);
 	Mesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
 }
+void AClueActor::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UStoryStateSubsystem* Story = GI->GetSubsystem<UStoryStateSubsystem>())
+		{
+			if (Story->HasClue(ClueFact))
+			{
+				Destroy(); // already collected before the checkpoint
+			}
+		}
+	}
+}
 
 void AClueActor::Interact_Implementation(AActor* Interactor)
 {
@@ -18,7 +33,7 @@ void AClueActor::Interact_Implementation(AActor* Interactor)
 	{
 		if (UStoryStateSubsystem* Story = GI->GetSubsystem<UStoryStateSubsystem>())
 		{
-			Story->CollectClue(ClueFact, ClueTitle);
+			Story->CollectClue(ClueFact, ClueTitle, ClueText);
 		}
 	}
 

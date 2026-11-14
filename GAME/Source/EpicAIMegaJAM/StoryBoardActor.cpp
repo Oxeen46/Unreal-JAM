@@ -19,15 +19,33 @@
 
 namespace
 {
-	// All positions are in the board's local space: X = out of the board, Y = sideways, Z = up
-	constexpr float SlotSpacing = 90.f;
+	// Board-local space: X = out of the board, Y = sideways (screen-left is +Y), Z = up.
+	// Each storyboard is a cluster laid out around its own origin.
+	constexpr float SlotSpacing = 130.f;
 	constexpr float SlotX = 2.f;
-	constexpr float SlotZ = 30.f;
+	constexpr float SlotZ = 45.f;
 	constexpr float NoteX = 6.f;
-	constexpr float TrayZ = -50.f;
-	constexpr float NoteSpacing = 75.f;
+	constexpr float TrayZ = -35.f;
+	constexpr float TrayRowSpacing = 48.f;
+	constexpr float NoteSpacing = 70.f;
 	constexpr float DragX = 14.f;
-	constexpr float SnapDistance = 55.f;
+	constexpr float SnapDistance = 60.f;
+	constexpr float ViewZ = 20.f;       // height of a cluster's view center above its origin
+	constexpr float CellHeight = 380.f;
+	constexpr float CellPadding = 160.f;
+	constexpr int32 MaxGridColumns = 2;
+
+	// Warm and dark, easy on the eyes
+	const FLinearColor WallColor(0.075f, 0.048f, 0.03f);
+	const FLinearColor PanelColor(0.11f, 0.07f, 0.045f);
+	const FLinearColor PanelSelectedColor(0.16f, 0.105f, 0.065f);
+	const FLinearColor SlotColor(0.045f, 0.03f, 0.02f);
+	const FLinearColor NoteColor(0.85f, 0.76f, 0.5f);
+	const FLinearColor PinColor(1.f, 0.85f, 0.f);
+	const FColor TitleColor(245, 242, 235);
+	const FColor Gold(255, 215, 0);
+	const FColor Red(220, 70, 55);
+	const FColor Green(120, 200, 120);
 
 	FString BoardShortName(const FGameplayTag& Tag)
 	{
@@ -36,23 +54,23 @@ namespace
 		return Full.FindLastChar('.', Idx) ? Full.Mid(Idx + 1) : Full;
 	}
 
+	float PageWidth(int32 NoteCount)
+	{
+		return FMath::Max(NoteCount * SlotSpacing + 100.f, 520.f);
+	}
+
+	// Slot 1 is on the left of the screen, so slots run toward -Y. Relative to a cluster origin.
 	FVector SlotLocal(int32 Index, int32 Count)
 	{
-		return FVector(SlotX, (Index - (Count - 1) * 0.5f) * SlotSpacing, SlotZ);
+		return FVector(SlotX, -(Index - (Count - 1) * 0.5f) * SlotSpacing, SlotZ);
 	}
 
-	FVector TrayLocal(int32 Index, int32 Count)
+	UMaterialInstanceDynamic* Tint(UStaticMeshComponent* Mesh, UMaterialInterface* Mat, const FLinearColor& Color)
 	{
-		return FVector(NoteX, (Index - (Count - 1) * 0.5f) * NoteSpacing, TrayZ);
-	}
-
-	void Tint(UStaticMeshComponent* Mesh, UMaterialInterface* Mat, const FLinearColor& Color)
-	{
-		if (!Mesh || !Mat) return;
-		if (UMaterialInstanceDynamic* MID = Mesh->CreateDynamicMaterialInstance(0, Mat))
-		{
-			MID->SetVectorParameterValue(TEXT("Color"), Color);
-		}
+		if (!Mesh || !Mat) return nullptr;
+		UMaterialInstanceDynamic* MID = Mesh->CreateDynamicMaterialInstance(0, Mat);
+		if (MID) MID->SetVectorParameterValue(TEXT("Color"), Color);
+		return MID;
 	}
 
 	void StyleText(UTextRenderComponent* Text, float Size, FColor Color)
@@ -77,43 +95,39 @@ AStoryBoardActor::AStoryBoardActor()
 	if (CubeFinder.Succeeded()) CubeMesh = CubeFinder.Object;
 	if (MatFinder.Succeeded()) BasicMat = MatFinder.Object;
 
+	// The wall everything is pinned to
 	BoardMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BoardMesh"));
 	BoardMesh->SetupAttachment(SceneRoot);
 	BoardMesh->SetStaticMesh(CubeMesh);
-	BoardMesh->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
-	BoardMesh->SetRelativeScale3D(FVector(0.02f, 6.f, 2.2f));
+	BoardMesh->SetRelativeLocation(FVector(0.f, 0.f, ViewZ));
+	BoardMesh->SetRelativeScale3D(FVector(0.02f, 8.f, 4.4f));
 	BoardMesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
 
-	// Sits in front of the board (+X) looking back at it
+	ContentRoot = CreateDefaultSubobject<USceneComponent>(TEXT("ContentRoot"));
+	ContentRoot->SetupAttachment(SceneRoot);
+
+	// Follows the selected storyboard. Holds the tray, status and hint.
+	FocusRoot = CreateDefaultSubobject<USceneComponent>(TEXT("FocusRoot"));
+	FocusRoot->SetupAttachment(ContentRoot);
+
+	// In front of the board (+X), looking back at it
 	BoardCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("BoardCamera"));
 	BoardCamera->SetupAttachment(SceneRoot);
-	BoardCamera->SetRelativeLocation(FVector(360.f, 0.f, 10.f));
+	BoardCamera->SetRelativeLocation(FVector(340.f, 0.f, ViewZ));
 	BoardCamera->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
 
-	TitleText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("TitleText"));
-	TitleText->SetupAttachment(SceneRoot);
-	TitleText->SetRelativeLocation(FVector(3.f, 0.f, 95.f));
-	StyleText(TitleText, 12.f, FColor(235, 225, 205));
-	TitleText->SetText(FText::GetEmpty());
-
 	StatusText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("StatusText"));
-	StatusText->SetupAttachment(SceneRoot);
-	StatusText->SetRelativeLocation(FVector(3.f, 0.f, -10.f));
-	StyleText(StatusText, 9.f, FColor(220, 70, 55));
+	StatusText->SetupAttachment(FocusRoot);
+	StatusText->SetRelativeLocation(FVector(3.f, 0.f, 5.f));
+	StyleText(StatusText, 9.f, Red);
 	StatusText->SetText(FText::GetEmpty());
 
 	HintText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("HintText"));
-	HintText->SetupAttachment(SceneRoot);
-	HintText->SetRelativeLocation(FVector(3.f, 0.f, -88.f));
-	StyleText(HintText, 5.f, FColor(160, 150, 130));
-	HintText->SetText(FText::FromString(TEXT("Drag notes onto the board   |   Enter: Rewrite   |   Backspace: Leave")));
+	HintText->SetupAttachment(FocusRoot);
+	HintText->SetRelativeLocation(FVector(3.f, 0.f, -118.f));
+	StyleText(HintText, 4.5f, FColor(170, 155, 135));
+	HintText->SetText(FText::GetEmpty());
 	HintText->SetHiddenInGame(true);
-}
-
-void AStoryBoardActor::BeginPlay()
-{
-	Super::BeginPlay();
-	BuildSlots();
 }
 
 UStoryStateSubsystem* AStoryBoardActor::GetStory() const
@@ -122,149 +136,495 @@ UStoryStateSubsystem* AStoryBoardActor::GetStory() const
 	return GI ? GI->GetSubsystem<UStoryStateSubsystem>() : nullptr;
 }
 
-void AStoryBoardActor::BuildSlots()
+void AStoryBoardActor::BeginPlay()
 {
-	if (!Board) return;
+	Super::BeginPlay();
 
-	const int32 Count = Board->Slots.Num();
-	BoardWidth = FMath::Max(6, Count) * SlotSpacing + 60.f;
+	BoardMID = BoardMesh->CreateDynamicMaterialInstance(0, BasicMat);
+	if (BoardMID) BoardMID->SetVectorParameterValue(TEXT("Color"), WallColor);
 
-	BoardMesh->SetRelativeScale3D(FVector(0.02f, BoardWidth / 100.f, 2.2f));
-	BoardCamera->SetRelativeLocation(FVector(BoardWidth * 0.5f + 60.f, 0.f, 10.f));
-	Tint(BoardMesh, BasicMat, FLinearColor(0.06f, 0.055f, 0.05f));
+	LayoutGrid();
 
-	TitleText->SetText(Board->SceneTitle);
-
-	for (int32 i = 0; i < Count; ++i)
+	if (UStoryStateSubsystem* Story = GetStory())
 	{
-		FBoardSlotVisual Visual;
+		Story->OnClueCollected.AddDynamic(this, &AStoryBoardActor::HandleClueCollected);
 
-		Visual.Mesh = NewObject<UStaticMeshComponent>(this);
-		Visual.Mesh->SetStaticMesh(CubeMesh);
-		Visual.Mesh->SetupAttachment(SceneRoot);
-		Visual.Mesh->RegisterComponent();
-		Visual.Mesh->SetRelativeLocation(SlotLocal(i, Count));
-		Visual.Mesh->SetRelativeScale3D(FVector(0.01f, 0.7f, 0.45f));
-		Visual.Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		Tint(Visual.Mesh, BasicMat, FLinearColor(0.15f, 0.14f, 0.13f));
-
-		Visual.Text = NewObject<UTextRenderComponent>(this);
-		Visual.Text->SetupAttachment(SceneRoot);
-		Visual.Text->RegisterComponent();
-		Visual.Text->SetRelativeLocation(SlotLocal(i, Count) + FVector(1.f, 0.f, 30.f));
-		StyleText(Visual.Text, 5.f, FColor(200, 190, 170));
-		Visual.Text->SetText(Board->Slots[i].Label);
-
-		SlotVisuals.Add(Visual);
+		const TArray<int32> Revealed = RevealedList();
+		const int32 Active = Story->GetActiveStoryline(Board);
+		Selected = Revealed.Contains(Active) ? Active : (Revealed.Num() > 0 ? Revealed[0] : INDEX_NONE);
 	}
+
+	FocusLoc = (Selected != INDEX_NONE) ? ClusterOrigin(Selected) : FVector::ZeroVector;
+	FocusRoot->SetRelativeLocation(FocusLoc);
+	BuildBoard();
 }
 
-void AStoryBoardActor::BuildNotes()
+void AStoryBoardActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	DestroyNotes();
+	if (UStoryStateSubsystem* Story = GetStory())
+	{
+		Story->OnClueCollected.RemoveDynamic(this, &AStoryBoardActor::HandleClueCollected);
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
+// ---------------- Layout ----------------
+
+void AStoryBoardActor::LayoutGrid()
+{
+	const int32 Count = Board ? Board->Storylines.Num() : 0;
+
+	float MaxWidth = 520.f;
+	if (Board)
+	{
+		for (const FStoryline& Line : Board->Storylines)
+		{
+			MaxWidth = FMath::Max(MaxWidth, PageWidth(Line.Notes.Num()));
+		}
+	}
+
+	CellWidth = MaxWidth + CellPadding;
+	GridCols = FMath::Clamp(Count, 1, MaxGridColumns);
+	GridRows = FMath::Max(1, FMath::DivideAndRoundUp(Count, GridCols));
+	WallWidth = GridCols * CellWidth + 80.f;
+	WallHeight = GridRows * CellHeight + 60.f;
+	OverviewDist = FMath::Max(WallWidth * 0.5f, WallHeight / 1.125f) + 60.f;
+
+	BoardMesh->SetRelativeLocation(FVector(0.f, 0.f, ViewZ));
+	BoardMesh->SetRelativeScale3D(FVector(0.02f, WallWidth / 100.f, WallHeight / 100.f));
+}
+
+FVector AStoryBoardActor::ClusterOrigin(int32 StorylineIndex) const
+{
+	const int32 Col = StorylineIndex % GridCols;
+	const int32 Row = StorylineIndex / GridCols;
+	return FVector(0.f, ((GridCols - 1) * 0.5f - Col) * CellWidth, ((GridRows - 1) * 0.5f - Row) * CellHeight);
+}
+
+TArray<int32> AStoryBoardActor::RevealedList() const
+{
+	TArray<int32> Result;
+	UStoryStateSubsystem* Story = GetStory();
+	if (!Board || !Story) return Result;
+
+	for (int32 i = 0; i < Board->Storylines.Num(); ++i)
+	{
+		if (Story->IsStorylineRevealed(Board, i))
+		{
+			Result.Add(i);
+		}
+	}
+	return Result;
+}
+
+// ---------------- Building ----------------
+
+UStaticMeshComponent* AStoryBoardActor::AddCube(USceneComponent* Parent, const FVector& Loc, const FVector& Scale, const FLinearColor& Color, bool bClickable)
+{
+	UStaticMeshComponent* Mesh = NewObject<UStaticMeshComponent>(this);
+	Mesh->SetStaticMesh(CubeMesh);
+	Mesh->SetupAttachment(Parent);
+	Mesh->RegisterComponent();
+	Mesh->SetRelativeLocation(Loc);
+	Mesh->SetRelativeScale3D(Scale);
+
+	if (bClickable)
+	{
+		Mesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		Mesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+		Mesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	}
+	else
+	{
+		Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	if (UMaterialInstanceDynamic* MID = Tint(Mesh, BasicMat, Color))
+	{
+		FDimMesh Entry;
+		Entry.MID = MID;
+		Entry.Base = Color;
+		DimMeshes.Add(Entry);
+	}
+
+	BoardComponents.Add(Mesh);
+	return Mesh;
+}
+
+UTextRenderComponent* AStoryBoardActor::AddText(USceneComponent* Parent, const FVector& Loc, const FText& Text, float Size, FColor Color)
+{
+	UTextRenderComponent* Label = NewObject<UTextRenderComponent>(this);
+	Label->SetupAttachment(Parent);
+	Label->RegisterComponent();
+	Label->SetRelativeLocation(Loc);
+	StyleText(Label, Size, Color);
+	Label->SetText(Text);
+
+	FDimText Entry;
+	Entry.Text = Label;
+	Entry.Base = Color;
+	DimTexts.Add(Entry);
+
+	BoardComponents.Add(Label);
+	return Label;
+}
+
+USceneComponent* AStoryBoardActor::AddNote(USceneComponent* Parent, const FVector& Loc, FGameplayTag Clue, int32 Order, bool bClickable)
+{
+	USceneComponent* Root = NewObject<USceneComponent>(this);
+	Root->SetupAttachment(Parent);
+	Root->RegisterComponent();
+	Root->SetRelativeLocation(Loc);
+	BoardComponents.Add(Root);
+
+	UStaticMeshComponent* Mesh = AddCube(Root, FVector::ZeroVector, FVector(0.015f, 0.55f, 0.38f), NoteColor, bClickable);
 
 	UStoryStateSubsystem* Story = GetStory();
-	if (!Story) return;
+	const FText Title = Story ? Story->GetClueTitle(Clue) : FText::GetEmpty();
+	const FString Name = Title.IsEmpty() ? BoardShortName(Clue) : Title.ToString();
+	AddText(Root, FVector(1.f, 0.f, 0.f), FText::FromString(FString::Printf(TEXT("#%d\n%s"), Order, *Name)), 6.f, FColor(35, 28, 18));
 
-	for (const FGameplayTag& Clue : Story->GetCollectedClues())
+	if (bClickable)
 	{
 		FBoardNote Note;
 		Note.Clue = Clue;
-
-		Note.Root = NewObject<USceneComponent>(this);
-		Note.Root->SetupAttachment(SceneRoot);
-		Note.Root->RegisterComponent();
-
-		Note.Mesh = NewObject<UStaticMeshComponent>(this);
-		Note.Mesh->SetStaticMesh(CubeMesh);
-		Note.Mesh->SetupAttachment(Note.Root);
-		Note.Mesh->RegisterComponent();
-		Note.Mesh->SetRelativeScale3D(FVector(0.015f, 0.55f, 0.38f));
-		Note.Mesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		Note.Mesh->SetCollisionResponseToAllChannels(ECR_Ignore);
-		Note.Mesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-		Tint(Note.Mesh, BasicMat, FLinearColor(0.96f, 0.84f, 0.43f));
-
-		Note.Text = NewObject<UTextRenderComponent>(this);
-		Note.Text->SetupAttachment(Note.Root);
-		Note.Text->RegisterComponent();
-		Note.Text->SetRelativeLocation(FVector(1.f, 0.f, 0.f));
-		StyleText(Note.Text, 7.f, FColor(30, 25, 15));
-		Note.Text->SetText(FText::FromString(BoardShortName(Clue)));
-
+		Note.Root = Root;
+		Note.Mesh = Mesh;
 		Notes.Add(Note);
 	}
+	return Root;
 }
 
-void AStoryBoardActor::DestroyNotes()
+bool AStoryBoardActor::IsRelevantClue(FGameplayTag Clue) const
 {
-	for (FBoardNote& Note : Notes)
+	if (!Board) return false;
+	if (Board->DecoyClues.Contains(Clue)) return true;
+	for (const FStoryline& Line : Board->Storylines)
 	{
-		if (Note.Text) Note.Text->DestroyComponent();
-		if (Note.Mesh) Note.Mesh->DestroyComponent();
-		if (Note.Root) Note.Root->DestroyComponent();
+		if (Line.IndexOfClue(Clue) != INDEX_NONE) return true;
 	}
-	Notes.Empty();
+	return false;
+}
+
+// The number printed on a note: its position in its own storyboard.
+// Decoys get a stable made-up number so they look like the rest.
+int32 AStoryBoardActor::NoteOrder(FGameplayTag Clue) const
+{
+	int32 Longest = 1;
+	if (Board)
+	{
+		for (const FStoryline& Line : Board->Storylines)
+		{
+			const int32 Position = Line.IndexOfClue(Clue);
+			if (Position != INDEX_NONE) return Position + 1;
+			Longest = FMath::Max(Longest, Line.Notes.Num());
+		}
+	}
+	return static_cast<int32>(GetTypeHash(Clue) % static_cast<uint32>(Longest)) + 1;
+}
+
+void AStoryBoardActor::ClearBoard()
+{
+	for (UActorComponent* Comp : BoardComponents)
+	{
+		if (IsValid(Comp))
+		{
+			Comp->DestroyComponent();
+		}
+	}
+	BoardComponents.Reset();
+	Notes.Reset();
+	Panels.Reset();
+	DimMeshes.Reset();
+	DimTexts.Reset();
 	DraggedIndex = INDEX_NONE;
 }
 
-void AStoryBoardActor::RefreshLayout()
+void AStoryBoardActor::BuildBoard()
 {
+	ClearBoard();
+
 	UStoryStateSubsystem* Story = GetStory();
-	if (!Story || !Board) return;
+	if (!Board || !Story) return;
 
-	const int32 SlotCount = Board->Slots.Num();
-	TArray<int32> Unplaced;
-
-	for (int32 n = 0; n < Notes.Num(); ++n)
+	for (int32 i = 0; i < Board->Storylines.Num(); ++i)
 	{
-		if (n == DraggedIndex) continue;
-
-		int32 SlotIndex = INDEX_NONE;
-		for (int32 s = 0; s < SlotCount; ++s)
+		if (Story->IsStorylineRevealed(Board, i))
 		{
-			if (Story->GetPlacedClue(Board->Slots[s].SlotTag) == Notes[n].Clue)
-			{
-				SlotIndex = s;
-				break;
-			}
-		}
-
-		if (SlotIndex != INDEX_NONE)
-		{
-			Notes[n].Root->SetRelativeLocation(SlotLocal(SlotIndex, SlotCount) + FVector(NoteX - SlotX, 0.f, 0.f));
-		}
-		else
-		{
-			Unplaced.Add(n);
+			BuildCluster(i);
 		}
 	}
 
-	for (int32 k = 0; k < Unplaced.Num(); ++k)
+	if (bActive && !bOverview)
 	{
-		Notes[Unplaced[k]].Root->SetRelativeLocation(TrayLocal(k, Unplaced.Num()));
+		BuildTray();
+	}
+
+	ApplyDim(CurrentDim);
+}
+
+// The authored description: the newest news about this storyboard
+FText AStoryBoardActor::PickDescription(int32 StorylineIndex) const
+{
+	UStoryStateSubsystem* Story = GetStory();
+	if (!Board || !Story || !Board->Storylines.IsValidIndex(StorylineIndex)) return FText::GetEmpty();
+
+	const FStoryline& Line = Board->Storylines[StorylineIndex];
+	if (Story->IsStorylineUnlocked(Board, StorylineIndex)) return Line.CompletedDescription;
+
+	const int32 Progress = Story->GetStorylineProgress(Board, StorylineIndex);
+	const FGameplayTag LastFound = Story->GetLastCollectedClueFor(Board, StorylineIndex);
+	const int32 FoundIndex = LastFound.IsValid() ? Line.IndexOfClue(LastFound) : INDEX_NONE;
+
+	// A clue you found but haven't placed yet is the newest news
+	if (FoundIndex != INDEX_NONE && FoundIndex >= Progress && !Line.Notes[FoundIndex].FoundDescription.IsEmpty())
+	{
+		return Line.Notes[FoundIndex].FoundDescription;
+	}
+
+	// Otherwise, the last note you placed
+	if (Progress > 0 && Line.Notes.IsValidIndex(Progress - 1) && !Line.Notes[Progress - 1].PlacedDescription.IsEmpty())
+	{
+		return Line.Notes[Progress - 1].PlacedDescription;
+	}
+
+	return (FoundIndex != INDEX_NONE) ? Line.Notes[FoundIndex].FoundDescription : FText::GetEmpty();
+}
+
+void AStoryBoardActor::BuildCluster(int32 StorylineIndex)
+{
+	UStoryStateSubsystem* Story = GetStory();
+	if (!Board || !Story || !Board->Storylines.IsValidIndex(StorylineIndex)) return;
+
+	const FStoryline& Line = Board->Storylines[StorylineIndex];
+	const FVector O = ClusterOrigin(StorylineIndex);
+	const int32 N = Line.Notes.Num();
+	const int32 Progress = Story->GetStorylineProgress(Board, StorylineIndex);
+	const bool bUnlocked = Story->IsStorylineUnlocked(Board, StorylineIndex);
+	const bool bIsActive = Story->GetActiveStoryline(Board) == StorylineIndex;
+	const float Width = PageWidth(N);
+
+	// The backdrop card. Click it to zoom to this storyboard.
+	UStaticMeshComponent* Panel = AddCube(ContentRoot, O + FVector(1.f, 0.f, 25.f), FVector(0.012f, Width / 100.f, 3.06f),
+		StorylineIndex == Selected ? PanelSelectedColor : PanelColor, true);
+	FBoardPanel PanelEntry;
+	PanelEntry.Mesh = Panel;
+	PanelEntry.StorylineIndex = StorylineIndex;
+	Panels.Add(PanelEntry);
+
+	// Big white title ("?" until the storyboard is complete)
+	AddText(ContentRoot, O + FVector(3.f, 0.f, 130.f), bUnlocked ? Line.Title : FText::FromString(TEXT("?")), 20.f, TitleColor);
+
+	if (bIsActive)
+	{
+		AddCube(ContentRoot, O + FVector(6.f, 0.f, 165.f), FVector(0.06f, 0.1f, 0.1f), PinColor, false);
+	}
+
+	// Your own description, based on the last found or placed clue
+	const FText Description = PickDescription(StorylineIndex);
+	if (!Description.IsEmpty())
+	{
+		AddText(ContentRoot, O + FVector(3.f, 0.f, 100.f), Description, 6.f, FColor(190, 175, 150));
+	}
+
+	if (bIsActive)
+	{
+		AddText(ContentRoot, O + FVector(3.f, 0.f, 84.f), FText::FromString(TEXT("ACTIVE REALITY")), 5.5f, Gold);
+	}
+	else if (bUnlocked && bActive)
+	{
+		AddText(ContentRoot, O + FVector(3.f, 0.f, 84.f), FText::FromString(TEXT("Press Enter to make this the reality")), 5.5f, FColor(150, 140, 120));
+	}
+
+	// The lineup: numbered slots, with the placed notes on them
+	for (int32 i = 0; i < N; ++i)
+	{
+		const FVector Pos = O + SlotLocal(i, N);
+		AddCube(ContentRoot, Pos, FVector(0.01f, 1.f, 0.55f), SlotColor, false);
+		AddText(ContentRoot, Pos + FVector(1.f, 0.f, 0.f), FText::FromString(FString::FromInt(i + 1)), 14.f, FColor(95, 75, 60));
+
+		if (i < Progress)
+		{
+			AddNote(ContentRoot, Pos + FVector(NoteX - SlotX, 0.f, 0.f), Line.Notes[i].Clue, i + 1, false);
+		}
 	}
 }
 
+// Every collected note that is not placed yet, under the selected storyboard
+void AStoryBoardActor::BuildTray()
+{
+	UStoryStateSubsystem* Story = GetStory();
+	if (!Board || !Story || !Board->Storylines.IsValidIndex(Selected)) return;
+
+	const float Width = PageWidth(Board->Storylines[Selected].Notes.Num());
+
+	TArray<FGameplayTag> Tray;
+	for (const FGameplayTag& Clue : Story->GetCollectedClues())
+	{
+		if (IsRelevantClue(Clue) && !Story->IsClueConsumed(Board, Clue))
+		{
+			Tray.Add(Clue);
+		}
+	}
+
+	const int32 Columns = FMath::Max(1, FMath::FloorToInt((Width - 60.f) / NoteSpacing));
+	for (int32 k = 0; k < Tray.Num(); ++k)
+	{
+		const int32 Row = k / Columns;
+		const int32 InThisRow = FMath::Min(Columns, Tray.Num() - Row * Columns);
+		const int32 Column = k % Columns;
+		const FVector Pos(NoteX, (Column - (InThisRow - 1) * 0.5f) * NoteSpacing, TrayZ - Row * TrayRowSpacing);
+		AddNote(FocusRoot, Pos, Tray[k], NoteOrder(Tray[k]), true);
+	}
+}
+
+void AStoryBoardActor::ApplyDim(float Dim)
+{
+	if (BoardMID)
+	{
+		BoardMID->SetVectorParameterValue(TEXT("Color"), FLinearColor(WallColor.R * Dim, WallColor.G * Dim, WallColor.B * Dim, 1.f));
+	}
+
+	for (const FDimMesh& Entry : DimMeshes)
+	{
+		if (IsValid(Entry.MID))
+		{
+			Entry.MID->SetVectorParameterValue(TEXT("Color"), FLinearColor(Entry.Base.R * Dim, Entry.Base.G * Dim, Entry.Base.B * Dim, 1.f));
+		}
+	}
+
+	for (const FDimText& Entry : DimTexts)
+	{
+		if (IsValid(Entry.Text))
+		{
+			Entry.Text->SetTextRenderColor(FColor(
+				static_cast<uint8>(Entry.Base.R * Dim), static_cast<uint8>(Entry.Base.G * Dim), static_cast<uint8>(Entry.Base.B * Dim), 255));
+		}
+	}
+
+	const bool bShowTexts = Dim > 0.5f;
+	StatusText->SetVisibility(bShowTexts);
+	HintText->SetVisibility(bShowTexts);
+}
+
+void AStoryBoardActor::SetStatus(const FText& Text, FColor Color)
+{
+	StatusText->SetTextRenderColor(Color);
+	StatusText->SetText(Text);
+}
+
+void AStoryBoardActor::HandleClueCollected(FGameplayTag Clue)
+{
+	UStoryStateSubsystem* Story = GetStory();
+	if (!Board || !Story) return;
+
+	// Is this the first clue we have for some storyboard? Then that storyboard just opened.
+	for (const FStoryline& Line : Board->Storylines)
+	{
+		if (Line.bRevealedFromStart || Line.IndexOfClue(Clue) == INDEX_NONE) continue;
+
+		int32 Found = 0;
+		for (const FStoryNote& Note : Line.Notes)
+		{
+			if (Story->HasClue(Note.Clue)) ++Found;
+		}
+		if (Found == 1 && GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("A new storyboard has opened."));
+		}
+	}
+
+	if (!bActive)
+	{
+		BuildBoard(); // keep the resting display up to date
+	}
+}
+
+// ---------------- Camera and selection ----------------
+
+void AStoryBoardActor::UpdateCameraTargets()
+{
+	if (bOverview || !Board || !Board->Storylines.IsValidIndex(Selected))
+	{
+		TargetCamLoc = FVector(OverviewDist, 0.f, ViewZ);
+		return;
+	}
+
+	const FVector O = ClusterOrigin(Selected);
+	const float Width = PageWidth(Board->Storylines[Selected].Notes.Num());
+	TargetCamLoc = FVector(FMath::Max(Width * 0.5f + 60.f, 340.f), O.Y, O.Z + ViewZ);
+}
+
+void AStoryBoardActor::UpdateHint()
+{
+	if (!Board) return;
+
+	FString Text;
+	if (bOverview)
+	{
+		Text = TEXT("Whole board   |   Click a storyboard, or Left/Right   |   Z or scroll up: zoom in   |   Backspace: leave");
+	}
+	else
+	{
+		const TArray<int32> Revealed = RevealedList();
+		Text = FString::Printf(TEXT("Storyboard %d / %d   |   Drag notes in order   |   Left/Right: next   |   Enter: make reality   |   Z: whole board   |   Backspace: leave"),
+			FMath::Max(1, Revealed.IndexOfByKey(Selected) + 1), Revealed.Num());
+	}
+	HintText->SetText(FText::FromString(Text));
+}
+
+void AStoryBoardActor::SelectStoryline(int32 Index, bool bZoomIn)
+{
+	Selected = Index;
+	if (bZoomIn) bOverview = false;
+
+	SetStatus(FText::GetEmpty(), Red);
+	UpdateCameraTargets();
+	BuildBoard();
+	UpdateHint();
+}
+
+void AStoryBoardActor::StepSelection(int32 Direction)
+{
+	const TArray<int32> Revealed = RevealedList();
+	if (Revealed.Num() < 2) return;
+
+	const int32 Position = FMath::Max(0, Revealed.IndexOfByKey(Selected));
+	SelectStoryline(Revealed[(Position + Direction + Revealed.Num()) % Revealed.Num()], false);
+}
+
+void AStoryBoardActor::SetOverview(bool bNewOverview)
+{
+	if (bOverview == bNewOverview) return;
+	bOverview = bNewOverview;
+
+	UpdateCameraTargets();
+	BuildBoard(); // the tray only exists while zoomed in
+	UpdateHint();
+}
+
+// ---------------- Entering and leaving ----------------
+
 FText AStoryBoardActor::GetInteractionPrompt_Implementation(AActor* Interactor) const
 {
-	return (bCompleted || bActive) ? FText::GetEmpty() : InteractionText;
+	if (bActive || RevealedList().Num() == 0) return FText::GetEmpty();
+	return InteractionText;
 }
 
 void AStoryBoardActor::Interact_Implementation(AActor* Interactor)
 {
 	if (bActive || ActivePC || !Board) return;
 
-	if (bCompleted)
+	if (RevealedList().Num() == 0)
 	{
 		if (GEngine)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::White, TEXT("This story is already written."));
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::White, TEXT("You have no leads yet."));
 		}
 		return;
 	}
 
-	APawn* Pawn = Cast<APawn>(Interactor);
+	const APawn* Pawn = Cast<APawn>(Interactor);
 	APlayerController* PC = Pawn ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
 	if (PC)
 	{
@@ -274,12 +634,31 @@ void AStoryBoardActor::Interact_Implementation(AActor* Interactor)
 
 void AStoryBoardActor::EnterBoard(APlayerController* PC)
 {
+	UStoryStateSubsystem* Story = GetStory();
+	const TArray<int32> Revealed = RevealedList();
+	if (!Story || Revealed.Num() == 0) return;
+
 	ActivePC = PC;
 	bActive = true;
+	bFlipping = false;
+	bOverview = false;
+	CurrentDim = 1.f;
 
-	BuildNotes();
-	RefreshLayout();
-	StatusText->SetText(FText::GetEmpty());
+	const int32 Active = Story->GetActiveStoryline(Board);
+	Selected = Revealed.Contains(Active) ? Active : Revealed[0];
+
+	FocusLoc = ClusterOrigin(Selected);
+	FocusRoot->SetRelativeLocation(FocusLoc);
+
+	// Start a little further back, then zoom in on the storyboard
+	UpdateCameraTargets();
+	CamLoc = TargetCamLoc;
+	CamLoc.X *= 1.3f;
+	BoardCamera->SetRelativeLocation(CamLoc);
+
+	BuildBoard();
+	UpdateHint();
+	SetStatus(FText::GetEmpty(), Red);
 	HintText->SetHiddenInGame(false);
 
 	PC->SetIgnoreMoveInput(true);
@@ -295,6 +674,9 @@ void AStoryBoardActor::EnterBoard(APlayerController* PC)
 	bPrevLMB = PC->IsInputKeyDown(EKeys::LeftMouseButton);
 	bPrevEnter = PC->IsInputKeyDown(EKeys::Enter);
 	bPrevBack = PC->IsInputKeyDown(EKeys::BackSpace);
+	bPrevLeft = PC->IsInputKeyDown(EKeys::Left) || PC->IsInputKeyDown(EKeys::A);
+	bPrevRight = PC->IsInputKeyDown(EKeys::Right) || PC->IsInputKeyDown(EKeys::D);
+	bPrevZ = PC->IsInputKeyDown(EKeys::Z);
 	InputReadyTime = GetWorld()->GetTimeSeconds() + BlendTime;
 
 	SetActorTickEnabled(true);
@@ -305,8 +687,13 @@ void AStoryBoardActor::ExitBoard()
 	if (!bActive || !ActivePC) return;
 
 	bActive = false;
-	DraggedIndex = INDEX_NONE;
-	StatusText->SetText(FText::GetEmpty());
+	bFlipping = false;
+	bOverview = false;
+	CurrentDim = 1.f;
+	HintText->SetHiddenInGame(true);
+	SetStatus(FText::GetEmpty(), Red);
+
+	BuildBoard(); // back to the resting display, without the tray
 
 	ActivePC->SetViewTargetWithBlend(ActivePC->GetPawn(), BlendTime, VTBlend_Cubic);
 	GetWorldTimerManager().SetTimer(ExitTimer, this, &AStoryBoardActor::FinishExit, BlendTime, false);
@@ -322,42 +709,136 @@ void AStoryBoardActor::FinishExit()
 		ActivePC->SetShowMouseCursor(false);
 		ActivePC = nullptr;
 	}
-	DestroyNotes();
-	HintText->SetHiddenInGame(true);
 	SetActorTickEnabled(false);
 }
+
+// ---------------- Reality change ----------------
+
+void AStoryBoardActor::StartFlip()
+{
+	bFlipping = true;
+	bFlipSwapped = false;
+	FlipElapsed = 0.f;
+	OnFlipStarted();
+}
+
+void AStoryBoardActor::TickFlip(float DeltaTime)
+{
+	FlipElapsed += DeltaTime;
+	const float T = FMath::Clamp(FlipElapsed / FMath::Max(FlipDuration, 0.1f), 0.f, 1.f);
+
+	// At the darkest point the board refreshes with the new reality
+	if (!bFlipSwapped && T >= 0.5f)
+	{
+		bFlipSwapped = true;
+		BuildBoard();
+	}
+
+	// A smooth dip to darkness and back. Never brighter than normal.
+	const float Dip = FMath::Square(FMath::Sin(PI * T));
+	const float Flutter = 1.f + FlutterAmount * FMath::Sin(2.f * PI * 3.f * T);
+	CurrentDim = FMath::Clamp(1.f - FlipDepth * Dip * Flutter, 0.f, 1.f);
+	ApplyDim(CurrentDim);
+
+	if (T >= 1.f)
+	{
+		bFlipping = false;
+		CurrentDim = 1.f;
+		ApplyDim(1.f);
+		OnFlipFinished();
+	}
+}
+
+void AStoryBoardActor::ToggleActive()
+{
+	UStoryStateSubsystem* Story = GetStory();
+	if (!Story || !Board || !Board->Storylines.IsValidIndex(Selected)) return;
+
+	if (!Story->IsStorylineUnlocked(Board, Selected))
+	{
+		SetStatus(FText::FromString(TEXT("This storyboard isn't complete yet.")), Red);
+		return;
+	}
+
+	if (Story->GetActiveStoryline(Board) == Selected)
+	{
+		Story->SetActiveStoryline(Board, INDEX_NONE);
+		SetStatus(FText::FromString(TEXT("Reality cleared.")), Green);
+	}
+	else
+	{
+		Story->SetActiveStoryline(Board, Selected);
+		SetStatus(FText::FromString(FString::Printf(TEXT("Reality: %s"), *Board->Storylines[Selected].Title.ToString())), Green);
+	}
+
+	StartFlip();
+}
+
+// ---------------- Input ----------------
 
 void AStoryBoardActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (!bActive || !ActivePC) return;
+	if (!ActivePC) return;
+
+	if (bActive)
+	{
+		// The camera glides to the selected storyboard, and the tray follows it
+		CamLoc = FMath::VInterpTo(CamLoc, TargetCamLoc, DeltaTime, ZoomSpeed);
+		BoardCamera->SetRelativeLocation(CamLoc);
+
+		if (Selected != INDEX_NONE)
+		{
+			FocusLoc = FMath::VInterpTo(FocusLoc, ClusterOrigin(Selected), DeltaTime, ZoomSpeed);
+			FocusRoot->SetRelativeLocation(FocusLoc);
+		}
+	}
+
+	if (bFlipping)
+	{
+		TickFlip(DeltaTime);
+	}
+
+	if (!bActive) return;
 
 	const bool bLMB = ActivePC->IsInputKeyDown(EKeys::LeftMouseButton);
 	const bool bEnter = ActivePC->IsInputKeyDown(EKeys::Enter);
 	const bool bBack = ActivePC->IsInputKeyDown(EKeys::BackSpace);
+	const bool bLeft = ActivePC->IsInputKeyDown(EKeys::Left) || ActivePC->IsInputKeyDown(EKeys::A);
+	const bool bRight = ActivePC->IsInputKeyDown(EKeys::Right) || ActivePC->IsInputKeyDown(EKeys::D);
+	const bool bZ = ActivePC->IsInputKeyDown(EKeys::Z);
 
 	const bool bLMBPressed = bLMB && !bPrevLMB;
 	const bool bLMBReleased = !bLMB && bPrevLMB;
 	const bool bEnterPressed = bEnter && !bPrevEnter;
 	const bool bBackPressed = bBack && !bPrevBack;
+	const bool bLeftPressed = bLeft && !bPrevLeft;
+	const bool bRightPressed = bRight && !bPrevRight;
+	const bool bZPressed = bZ && !bPrevZ;
 
 	bPrevLMB = bLMB;
 	bPrevEnter = bEnter;
 	bPrevBack = bBack;
+	bPrevLeft = bLeft;
+	bPrevRight = bRight;
+	bPrevZ = bZ;
 
-	// Ignore input while the camera is still blending in
-	if (GetWorld()->GetTimeSeconds() < InputReadyTime) return;
+	// Ignore input while the camera blends in or a reality change plays
+	if (GetWorld()->GetTimeSeconds() < InputReadyTime || bFlipping) return;
 
-	if (bBackPressed)
+	if (bBackPressed) { ExitBoard(); return; }
+	if (bLeftPressed) { StepSelection(-1); return; }
+	if (bRightPressed) { StepSelection(+1); return; }
+	if (bEnterPressed) { ToggleActive(); return; }
+
+	if (bZPressed || ActivePC->WasInputKeyJustPressed(EKeys::MouseScrollDown) || ActivePC->WasInputKeyJustPressed(EKeys::MouseScrollUp))
 	{
-		ExitBoard();
+		const bool bWheelDown = ActivePC->WasInputKeyJustPressed(EKeys::MouseScrollDown);
+		const bool bWheelUp = ActivePC->WasInputKeyJustPressed(EKeys::MouseScrollUp);
+		if (bZPressed) SetOverview(!bOverview);
+		else if (bWheelDown) SetOverview(true);
+		else if (bWheelUp) SetOverview(false);
 		return;
-	}
-
-	if (bEnterPressed)
-	{
-		TryRewrite();
-		if (!bActive) return;
 	}
 
 	if (bLMBPressed) BeginDrag();
@@ -367,30 +848,34 @@ void AStoryBoardActor::Tick(float DeltaTime)
 
 void AStoryBoardActor::BeginDrag()
 {
-	UStoryStateSubsystem* Story = GetStory();
-	if (!Story || !Board) return;
-
 	FHitResult Hit;
 	ActivePC->GetHitResultUnderCursor(ECC_Visibility, false, Hit);
 	UPrimitiveComponent* Clicked = Hit.GetComponent();
 	if (!Clicked) return;
 
-	for (int32 i = 0; i < Notes.Num(); ++i)
+	// Notes first (they sit in front of the cards)
+	if (!bOverview)
 	{
-		if (Notes[i].Mesh == Clicked)
+		for (int32 i = 0; i < Notes.Num(); ++i)
 		{
-			DraggedIndex = i;
-			StatusText->SetText(FText::GetEmpty());
-
-			// Picking a note up removes it from whatever slot it was in
-			for (const FStoryBoardSlot& BoardSlot : Board->Slots)
+			if (Notes[i].Mesh.Get() == Clicked)
 			{
-				if (Story->GetPlacedClue(BoardSlot.SlotTag) == Notes[i].Clue)
-				{
-					Story->ClearSlot(BoardSlot.SlotTag);
-				}
+				DraggedIndex = i;
+				SetStatus(FText::GetEmpty(), Red);
+				return;
 			}
-			RefreshLayout();
+		}
+	}
+
+	// Then a storyboard card: zoom to it
+	for (const FBoardPanel& Panel : Panels)
+	{
+		if (Panel.Mesh.Get() == Clicked)
+		{
+			if (bOverview || Panel.StorylineIndex != Selected)
+			{
+				SelectStoryline(Panel.StorylineIndex, true);
+			}
 			return;
 		}
 	}
@@ -398,74 +883,73 @@ void AStoryBoardActor::BeginDrag()
 
 void AStoryBoardActor::UpdateDrag()
 {
-	if (!Notes.IsValidIndex(DraggedIndex)) return;
+	if (!Notes.IsValidIndex(DraggedIndex) || !Board || !Board->Storylines.IsValidIndex(Selected)) return;
 
 	FVector Origin, Direction;
 	if (!ActivePC->DeprojectMousePositionToWorld(Origin, Direction)) return;
 
 	const FTransform BoardTransform = GetActorTransform();
 	const FVector PlanePoint = BoardTransform.TransformPosition(FVector(DragX, 0.f, 0.f));
-	const FVector PlaneNormal = GetActorForwardVector();
-	const FVector HitPoint = FMath::LinePlaneIntersection(Origin, Origin + Direction * 20000.f, PlanePoint, PlaneNormal);
+	const FVector HitPoint = FMath::LinePlaneIntersection(Origin, Origin + Direction * 20000.f, PlanePoint, GetActorForwardVector());
+
+	const FVector O = ClusterOrigin(Selected);
+	const float HalfWidth = PageWidth(Board->Storylines[Selected].Notes.Num()) * 0.5f - 30.f;
 
 	FVector Local = BoardTransform.InverseTransformPosition(HitPoint);
 	Local.X = DragX;
-	Local.Y = FMath::Clamp(Local.Y, -BoardWidth * 0.5f + 30.f, BoardWidth * 0.5f - 30.f);
-	Local.Z = FMath::Clamp(Local.Z, -85.f, 100.f);
+	Local.Y = FMath::Clamp(Local.Y, O.Y - HalfWidth, O.Y + HalfWidth);
+	Local.Z = FMath::Clamp(Local.Z, O.Z - 125.f, O.Z + 150.f);
 
-	Notes[DraggedIndex].Root->SetRelativeLocation(Local);
+	Notes[DraggedIndex].Root->SetWorldLocation(BoardTransform.TransformPosition(Local));
 }
 
 void AStoryBoardActor::EndDrag()
 {
 	UStoryStateSubsystem* Story = GetStory();
-	if (Story && Board && Notes.IsValidIndex(DraggedIndex))
+	if (!Story || !Board || !Notes.IsValidIndex(DraggedIndex) || !Board->Storylines.IsValidIndex(Selected))
 	{
-		const FVector Local = Notes[DraggedIndex].Root->GetRelativeLocation();
-		const int32 Count = Board->Slots.Num();
-
-		int32 Best = INDEX_NONE;
-		double BestDistance = SnapDistance;
-		for (int32 i = 0; i < Count; ++i)
-		{
-			const FVector SlotPos = SlotLocal(i, Count);
-			const double Distance = FVector2D::Distance(FVector2D(Local.Y, Local.Z), FVector2D(SlotPos.Y, SlotPos.Z));
-			if (Distance < BestDistance)
-			{
-				BestDistance = Distance;
-				Best = i;
-			}
-		}
-
-		if (Best != INDEX_NONE)
-		{
-			Story->PlaceClue(Board->Slots[Best].SlotTag, Notes[DraggedIndex].Clue);
-		}
-	}
-
-	DraggedIndex = INDEX_NONE;
-	RefreshLayout();
-}
-
-void AStoryBoardActor::TryRewrite()
-{
-	UStoryStateSubsystem* Story = GetStory();
-	if (!Story || !Board) return;
-
-	const int32 Index = Story->CommitBoard(Board);
-	if (!Board->Storylines.IsValidIndex(Index))
-	{
-		StatusText->SetTextRenderColor(FColor(220, 70, 55));
-		StatusText->SetText(FText::FromString(TEXT("That doesn't fit.")));
+		DraggedIndex = INDEX_NONE;
 		return;
 	}
 
-	StatusText->SetTextRenderColor(FColor(120, 200, 120));
-	StatusText->SetText(Board->Storylines[Index].Title);
+	const FVector Local = GetActorTransform().InverseTransformPosition(Notes[DraggedIndex].Root->GetComponentLocation());
+	const FGameplayTag Clue = Notes[DraggedIndex].Clue;
+	DraggedIndex = INDEX_NONE;
 
-	if (bLockAfterCommit)
+	// Which slot was it dropped on?
+	const FVector O = ClusterOrigin(Selected);
+	const int32 Count = Board->Storylines[Selected].Notes.Num();
+	int32 Best = INDEX_NONE;
+	double BestDistance = SnapDistance;
+	for (int32 i = 0; i < Count; ++i)
 	{
-		bCompleted = true;
+		const FVector SlotPos = O + SlotLocal(i, Count);
+		const double Distance = FVector2D::Distance(FVector2D(Local.Y, Local.Z), FVector2D(SlotPos.Y, SlotPos.Z));
+		if (Distance < BestDistance)
+		{
+			BestDistance = Distance;
+			Best = i;
+		}
 	}
-	ExitBoard();
+
+	if (Best != INDEX_NONE)
+	{
+		const bool bWasUnlocked = Story->IsStorylineUnlocked(Board, Selected);
+
+		if (Story->TryPlaceNote(Board, Selected, Best, Clue))
+		{
+			if (!bWasUnlocked && Story->IsStorylineUnlocked(Board, Selected))
+			{
+				SetStatus(FText::FromString(FString::Printf(TEXT("Storyboard complete: %s"), *Board->Storylines[Selected].Title.ToString())), Green);
+				StartFlip(); // the title changes from "?" to its name as the reality shifts
+				return;
+			}
+			BuildBoard();
+			return;
+		}
+
+		SetStatus(FText::FromString(TEXT("That doesn't fit.")), Red);
+	}
+
+	BuildBoard(); // the note goes back to the tray
 }

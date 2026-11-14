@@ -36,4 +36,7 @@ public:
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Clue")
     FText InteractionText = FText::FromString(TEXT("Pick up"));
+	
+protected:
+	virtual void BeginPlay() override;
 };
