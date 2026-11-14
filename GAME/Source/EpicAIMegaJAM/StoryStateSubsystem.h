@@ -9,7 +9,6 @@ class UStoryStateSave;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStoryFactChanged, FGameplayTag, Fact);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnClueCollected, FGameplayTag, Clue);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBoardChanged);
 
 USTRUCT(BlueprintType)
 struct FSaveSlotInfo
@@ -50,43 +49,46 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Story")
 	FText GetClueTitle(FGameplayTag Clue) const;
-	
+
 	UFUNCTION(BlueprintPure, Category="Story")
 	FText GetClueText(FGameplayTag Clue) const;
 
 	UPROPERTY(BlueprintAssignable, Category="Story")
 	FOnClueCollected OnClueCollected;
 
-	// ---- Board placement ----
-	UFUNCTION(BlueprintCallable, Category="Story")
-	void PlaceClue(FGameplayTag Slot, FGameplayTag Clue);
-
-	UFUNCTION(BlueprintCallable, Category="Story")
-	void ClearSlot(FGameplayTag Slot);
+	// ---- Storyboard ----
+	// How many notes of a lineup have been placed
+	UFUNCTION(BlueprintPure, Category="Story")
+	int32 GetStorylineProgress(const UStoryBoardData* Board, int32 StorylineIndex) const;
 
 	UFUNCTION(BlueprintPure, Category="Story")
-	FGameplayTag GetPlacedClue(FGameplayTag Slot) const;
+	bool IsStorylineUnlocked(const UStoryBoardData* Board, int32 StorylineIndex) const;
+	
+	// True once you've found any clue that belongs to this storyboard
+	UFUNCTION(BlueprintPure, Category="Story")
+	bool IsStorylineRevealed(const UStoryBoardData* Board, int32 StorylineIndex) const;
 
-	UPROPERTY(BlueprintAssignable, Category="Story")
-	FOnBoardChanged OnBoardChanged;
-
-	// ---- Storylines ----
-	// Checks the board. If it fits a storyline, confirms it, makes it the active reality
-	// and returns its index. Returns -1 if nothing fits.
+	// Places a note into a lineup. Only works if it is the next slot AND the right clue.
+	// Completing a lineup makes it the active reality.
 	UFUNCTION(BlueprintCallable, Category="Story")
-	int32 CommitBoard(const UStoryBoardData* Board);
+	bool TryPlaceNote(const UStoryBoardData* Board, int32 StorylineIndex, int32 SlotIndex, FGameplayTag Clue);
 
-	// The currently active storyline for a board (-1 = none)
+	// True if this clue is already placed in its lineup
+	UFUNCTION(BlueprintPure, Category="Story")
+	bool IsClueConsumed(const UStoryBoardData* Board, FGameplayTag Clue) const;
+
+	// The most recently collected clue that belongs to a lineup (invalid if none)
+	UFUNCTION(BlueprintPure, Category="Story")
+	FGameplayTag GetLastCollectedClueFor(const UStoryBoardData* Board, int32 StorylineIndex) const;
+
+	// The active reality for a board (-1 = none)
 	UFUNCTION(BlueprintPure, Category="Story")
 	int32 GetActiveStoryline(const UStoryBoardData* Board) const;
 
-	// Switch reality. -1 = none. Undoes the old storyline's facts and applies the new one's.
+	// Switch reality. -1 = none. Undoes the old reality's facts and applies the new one's.
 	UFUNCTION(BlueprintCallable, Category="Story")
 	void SetActiveStoryline(const UStoryBoardData* Board, int32 Index);
 
-	UFUNCTION(BlueprintPure, Category="Story")
-	TArray<int32> GetConfirmedStorylines(const UStoryBoardData* Board) const;
-	
 	// ---- Inventory ----
 	UFUNCTION(BlueprintPure, Category="Inventory")
 	int32 GetItemCount(FGameplayTag Item) const;
@@ -115,12 +117,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Inventory")
 	void MarkPickupCollected(const FString& PickupId);
-	
+
 	// ---- Checkpoints and saving ----
 	// Slot 0 is the autosave, slots 1-3 are manual
 	static constexpr int32 NumSlots = 4;
 
-	// Remembers the respawn point and the story state, and writes the autosave
 	UFUNCTION(BlueprintCallable, Category="Save")
 	void SetCheckpoint(const FTransform& Transform, const FText& Name);
 
@@ -157,9 +158,14 @@ private:
 	UPROPERTY() FGameplayTagContainer Facts;
 	UPROPERTY() TArray<FGameplayTag> CollectedClues;
 	UPROPERTY() TMap<FGameplayTag, FText> ClueTitles;
-	UPROPERTY() TMap<FGameplayTag, FGameplayTag> PlacedClues;   // slot -> clue
-	UPROPERTY() TMap<FString, int32> ActiveStorylines;          // board asset -> active storyline
-	UPROPERTY() TArray<FString> ConfirmedStorylines;            // "BoardPath#Index"
+	UPROPERTY() TMap<FGameplayTag, FText> ClueTexts;
+	UPROPERTY() TMap<FString, int32> StorylineProgress;   // "BoardPath#Index" -> notes placed
+	UPROPERTY() TMap<FString, int32> ActiveStorylines;    // board asset -> active storyline
+
+	UPROPERTY() TMap<FGameplayTag, int32> ItemCounts;
+	UPROPERTY() TMap<FGameplayTag, int32> WeaponDurability;
+	UPROPERTY() FGameplayTag EquippedWeapon;
+	UPROPERTY() TArray<FString> CollectedPickups;
 
 	// Story state as it was at the last checkpoint (used when you die)
 	UPROPERTY() TObjectPtr<UStoryStateSave> CheckpointSnapshot;
@@ -169,10 +175,4 @@ private:
 	FString CheckpointLevel;
 	FString CheckpointName;
 	FTransform CheckpointTransform;
-	
-	UPROPERTY() TMap<FGameplayTag, FText> ClueTexts;
-	UPROPERTY() TMap<FGameplayTag, int32> ItemCounts;
-	UPROPERTY() TMap<FGameplayTag, int32> WeaponDurability;
-	UPROPERTY() FGameplayTag EquippedWeapon;
-	UPROPERTY() TArray<FString> CollectedPickups;
 };

@@ -11,7 +11,7 @@ namespace
 		return FString::Printf(TEXT("Slot_%d"), Index);
 	}
 
-	FString ConfirmKey(const UStoryBoardData* Board, int32 Index)
+	FString ProgressKey(const UStoryBoardData* Board, int32 Index)
 	{
 		return FString::Printf(TEXT("%s#%d"), *Board->GetPathName(), Index);
 	}
@@ -64,11 +64,136 @@ FText UStoryStateSubsystem::GetClueTitle(FGameplayTag Clue) const
 	const FText* Found = ClueTitles.Find(Clue);
 	return Found ? *Found : FText::GetEmpty();
 }
+
 FText UStoryStateSubsystem::GetClueText(FGameplayTag Clue) const
 {
 	const FText* Found = ClueTexts.Find(Clue);
 	return Found ? *Found : FText::GetEmpty();
 }
+
+// ---------------- Storyboard ----------------
+
+int32 UStoryStateSubsystem::GetStorylineProgress(const UStoryBoardData* Board, int32 StorylineIndex) const
+{
+	if (!Board) return 0;
+	const int32* Found = StorylineProgress.Find(ProgressKey(Board, StorylineIndex));
+	return Found ? *Found : 0;
+}
+
+bool UStoryStateSubsystem::IsStorylineUnlocked(const UStoryBoardData* Board, int32 StorylineIndex) const
+{
+	if (!Board || !Board->Storylines.IsValidIndex(StorylineIndex)) return false;
+	const int32 Length = Board->Storylines[StorylineIndex].Notes.Num();
+	return Length > 0 && GetStorylineProgress(Board, StorylineIndex) >= Length;
+}
+
+bool UStoryStateSubsystem::IsStorylineRevealed(const UStoryBoardData* Board, int32 StorylineIndex) const
+{
+	if (!Board || !Board->Storylines.IsValidIndex(StorylineIndex)) return false;
+
+	const FStoryline& Line = Board->Storylines[StorylineIndex];
+	if (Line.bRevealedFromStart) return true;
+
+	for (const FStoryNote& Note : Line.Notes)
+	{
+		if (CollectedClues.Contains(Note.Clue)) return true;
+	}
+	return false;
+}
+
+bool UStoryStateSubsystem::TryPlaceNote(const UStoryBoardData* Board, int32 StorylineIndex, int32 SlotIndex, FGameplayTag Clue)
+{
+	if (!Board || !Board->Storylines.IsValidIndex(StorylineIndex) || !HasClue(Clue)) return false;
+
+	const FStoryline& Line = Board->Storylines[StorylineIndex];
+	const int32 Progress = GetStorylineProgress(Board, StorylineIndex);
+
+	// Must be the next empty slot, and the right note for it
+	if (SlotIndex != Progress || !Line.Notes.IsValidIndex(Progress) || Line.Notes[Progress].Clue != Clue) return false;
+
+	StorylineProgress.Add(ProgressKey(Board, StorylineIndex), Progress + 1);
+
+	if (Progress + 1 >= Line.Notes.Num())
+	{
+		SetActiveStoryline(Board, StorylineIndex); // completing a storyboard shifts reality
+	}
+	return true;
+}
+
+bool UStoryStateSubsystem::IsClueConsumed(const UStoryBoardData* Board, FGameplayTag Clue) const
+{
+	if (!Board) return false;
+
+	for (int32 i = 0; i < Board->Storylines.Num(); ++i)
+	{
+		const int32 Position = Board->Storylines[i].IndexOfClue(Clue);
+		if (Position != INDEX_NONE && GetStorylineProgress(Board, i) > Position)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+
+FGameplayTag UStoryStateSubsystem::GetLastCollectedClueFor(const UStoryBoardData* Board, int32 StorylineIndex) const
+{
+	if (!Board || !Board->Storylines.IsValidIndex(StorylineIndex)) return FGameplayTag();
+
+	const FStoryline& Line = Board->Storylines[StorylineIndex];
+	for (int32 i = CollectedClues.Num() - 1; i >= 0; --i)
+	{
+		if (Line.IndexOfClue(CollectedClues[i]) != INDEX_NONE)
+		{
+			return CollectedClues[i];
+		}
+	}
+	return FGameplayTag();
+}
+
+int32 UStoryStateSubsystem::GetActiveStoryline(const UStoryBoardData* Board) const
+{
+	if (!Board) return INDEX_NONE;
+	const int32* Found = ActiveStorylines.Find(Board->GetPathName());
+	return Found ? *Found : INDEX_NONE;
+}
+
+void UStoryStateSubsystem::SetActiveStoryline(const UStoryBoardData* Board, int32 Index)
+{
+	if (!Board) return;
+
+	const FString Key = Board->GetPathName();
+	const int32 Previous = GetActiveStoryline(Board);
+	if (Previous == Index) return;
+
+	FGameplayTagContainer NewFacts;
+	if (Board->Storylines.IsValidIndex(Index))
+	{
+		NewFacts = Board->Storylines[Index].ResultFacts;
+	}
+
+	// Undo the old reality (except facts the new one also sets)
+	if (Board->Storylines.IsValidIndex(Previous))
+	{
+		for (const FGameplayTag& Old : Board->Storylines[Previous].ResultFacts)
+		{
+			if (!NewFacts.HasTagExact(Old))
+			{
+				SetFact(Old, false);
+			}
+		}
+	}
+
+	for (const FGameplayTag& Fact : NewFacts)
+	{
+		SetFact(Fact, true);
+	}
+
+	if (Board->Storylines.IsValidIndex(Index)) ActiveStorylines.Add(Key, Index);
+	else ActiveStorylines.Remove(Key);
+}
+
+// ---------------- Inventory ----------------
 
 int32 UStoryStateSubsystem::GetItemCount(FGameplayTag Item) const
 {
@@ -116,124 +241,6 @@ void UStoryStateSubsystem::MarkPickupCollected(const FString& PickupId)
 	CollectedPickups.AddUnique(PickupId);
 }
 
-// ---------------- Board placement ----------------
-
-void UStoryStateSubsystem::PlaceClue(FGameplayTag Slot, FGameplayTag Clue)
-{
-	if (!Slot.IsValid() || !HasClue(Clue)) return;
-
-	// A clue can only sit in one slot at a time
-	for (auto It = PlacedClues.CreateIterator(); It; ++It)
-	{
-		if (It.Value() == Clue)
-		{
-			It.RemoveCurrent();
-		}
-	}
-
-	PlacedClues.Add(Slot, Clue);
-	OnBoardChanged.Broadcast();
-}
-
-void UStoryStateSubsystem::ClearSlot(FGameplayTag Slot)
-{
-	if (PlacedClues.Remove(Slot) > 0)
-	{
-		OnBoardChanged.Broadcast();
-	}
-}
-
-FGameplayTag UStoryStateSubsystem::GetPlacedClue(FGameplayTag Slot) const
-{
-	const FGameplayTag* Found = PlacedClues.Find(Slot);
-	return Found ? *Found : FGameplayTag();
-}
-
-// ---------------- Storylines ----------------
-
-int32 UStoryStateSubsystem::CommitBoard(const UStoryBoardData* Board)
-{
-	if (!Board) return INDEX_NONE;
-
-	int32 Match = INDEX_NONE;
-	for (int32 i = 0; i < Board->Storylines.Num() && Match == INDEX_NONE; ++i)
-	{
-		bool bAllMatch = Board->Storylines[i].Requirements.Num() > 0;
-		for (const FStorylineRequirement& Req : Board->Storylines[i].Requirements)
-		{
-			if (GetPlacedClue(Req.SlotTag) != Req.Clue)
-			{
-				bAllMatch = false;
-				break;
-			}
-		}
-		if (bAllMatch) Match = i;
-	}
-	if (Match == INDEX_NONE) return INDEX_NONE;
-
-	ConfirmedStorylines.AddUnique(ConfirmKey(Board, Match));
-	SetActiveStoryline(Board, Match);
-	return Match;
-}
-
-int32 UStoryStateSubsystem::GetActiveStoryline(const UStoryBoardData* Board) const
-{
-	if (!Board) return INDEX_NONE;
-	const int32* Found = ActiveStorylines.Find(Board->GetPathName());
-	return Found ? *Found : INDEX_NONE;
-}
-
-void UStoryStateSubsystem::SetActiveStoryline(const UStoryBoardData* Board, int32 Index)
-{
-	if (!Board) return;
-
-	const FString Key = Board->GetPathName();
-	const int32 Previous = GetActiveStoryline(Board);
-	if (Previous == Index) return;
-
-	FGameplayTagContainer NewFacts;
-	if (Board->Storylines.IsValidIndex(Index))
-	{
-		NewFacts = Board->Storylines[Index].ResultFacts;
-	}
-
-	// Undo the old reality (except facts the new one also sets)
-	if (Board->Storylines.IsValidIndex(Previous))
-	{
-		for (const FGameplayTag& Old : Board->Storylines[Previous].ResultFacts)
-		{
-			if (!NewFacts.HasTagExact(Old))
-			{
-				SetFact(Old, false);
-			}
-		}
-	}
-
-	for (const FGameplayTag& Fact : NewFacts)
-	{
-		SetFact(Fact, true);
-	}
-
-	if (Board->Storylines.IsValidIndex(Index)) ActiveStorylines.Add(Key, Index);
-	else ActiveStorylines.Remove(Key);
-}
-
-TArray<int32> UStoryStateSubsystem::GetConfirmedStorylines(const UStoryBoardData* Board) const
-{
-	TArray<int32> Result;
-	if (!Board) return Result;
-
-	const FString Prefix = Board->GetPathName() + TEXT("#");
-	for (const FString& Entry : ConfirmedStorylines)
-	{
-		if (Entry.StartsWith(Prefix))
-		{
-			Result.Add(FCString::Atoi(*Entry.RightChop(Prefix.Len())));
-		}
-	}
-	return Result;
-}
-
 // ---------------- Checkpoints and saving ----------------
 
 UStoryStateSave* UStoryStateSubsystem::CaptureState() const
@@ -245,10 +252,9 @@ UStoryStateSave* UStoryStateSubsystem::CaptureState() const
 	Facts.GetGameplayTagArray(Save->Facts);
 	Save->CollectedClues = CollectedClues;
 	Save->ClueTitles = ClueTitles;
-	Save->PlacedClues = PlacedClues;
-	Save->ActiveStorylines = ActiveStorylines;
-	Save->ConfirmedStorylines = ConfirmedStorylines;
 	Save->ClueTexts = ClueTexts;
+	Save->StorylineProgress = StorylineProgress;
+	Save->ActiveStorylines = ActiveStorylines;
 	Save->ItemCounts = ItemCounts;
 	Save->WeaponDurability = WeaponDurability;
 	Save->EquippedWeapon = EquippedWeapon;
@@ -268,10 +274,9 @@ void UStoryStateSubsystem::ApplyState(const UStoryStateSave* Save)
 	Facts = FGameplayTagContainer::CreateFromArray(Save->Facts);
 	CollectedClues = Save->CollectedClues;
 	ClueTitles = Save->ClueTitles;
-	PlacedClues = Save->PlacedClues;
-	ActiveStorylines = Save->ActiveStorylines;
-	ConfirmedStorylines = Save->ConfirmedStorylines;
 	ClueTexts = Save->ClueTexts;
+	StorylineProgress = Save->StorylineProgress;
+	ActiveStorylines = Save->ActiveStorylines;
 	ItemCounts = Save->ItemCounts;
 	WeaponDurability = Save->WeaponDurability;
 	EquippedWeapon = Save->EquippedWeapon;
@@ -382,10 +387,9 @@ void UStoryStateSubsystem::ResetAllState()
 	Facts.Reset();
 	CollectedClues.Reset();
 	ClueTitles.Reset();
-	PlacedClues.Reset();
-	ActiveStorylines.Reset();
-	ConfirmedStorylines.Reset();
 	ClueTexts.Reset();
+	StorylineProgress.Reset();
+	ActiveStorylines.Reset();
 	ItemCounts.Reset();
 	WeaponDurability.Reset();
 	EquippedWeapon = FGameplayTag();
