@@ -9,6 +9,8 @@
 #include "InputActionValue.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EpicAIMegaJAM.h"
+#include "GameSettingsSubsystem.h"
+#include "Engine/GameInstance.h"
 
 AEpicAIMegaJAMCharacter::AEpicAIMegaJAMCharacter()
 {
@@ -91,6 +93,14 @@ void AEpicAIMegaJAMCharacter::LookInput(const FInputActionValue& Value)
 
 void AEpicAIMegaJAMCharacter::DoAim(float Yaw, float Pitch)
 {
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		if (const UGameSettingsSubsystem* Settings = GI->GetSubsystem<UGameSettingsSubsystem>())
+		{
+			Yaw *= Settings->GetMouseSensitivity();
+			Pitch *= Settings->GetMouseSensitivity() * (Settings->GetInvertY() ? -1.f : 1.f);
+		}
+	}
 	if (GetController())
 	{
 		// pass the rotation inputs
