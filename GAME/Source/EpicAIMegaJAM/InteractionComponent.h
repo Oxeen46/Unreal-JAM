@@ -28,9 +28,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Interaction")
 	TSubclassOf<UInteractionPromptWidget> PromptWidgetClass;
 
+	// Small dot in the screen center; it grows and turns gold when the ray hits something usable
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Interaction")
+	bool bShowCrosshair = true;
+
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
+	UPROPERTY()
+	TObjectPtr<class UCrosshairWidget> Crosshair;
+
 	AActor* FindTarget() const;
 	APlayerController* GetPC() const;
 	FText GetKeyText() const;

@@ -23,6 +23,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Clue")
 	TObjectPtr<UTexture2D> ClueIcon;
 
+	// Extra actors to outline when this clue is near (e.g. the paper model under a mesh-less clue).
+	// Empty: the clue's own mesh is outlined, or the closest small mesh next to it.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Clue")
+	TArray<TObjectPtr<AActor>> HighlightActors;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Clue")
 	FGameplayTag ClueFact;
 

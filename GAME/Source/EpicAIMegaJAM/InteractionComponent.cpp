@@ -1,6 +1,7 @@
 #include "InteractionComponent.h"
 #include "InteractableInterface.h"
 #include "InteractionPromptWidget.h"
+#include "CrosshairWidget.h"
 #include "InputAction.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
@@ -72,12 +73,50 @@ FText UInteractionComponent::GetKeyText() const
 	return FText::FromString(TEXT("E"));
 }
 
+void UInteractionComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// The pawn can respawn: don't leave a second dot behind
+	if (Crosshair)
+	{
+		Crosshair->RemoveFromParent();
+		Crosshair = nullptr;
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
 void UInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	APlayerController* PC = GetPC();
-	if (!PC || !PC->IsLocalController() || !PromptWidgetClass) return;
+	if (!PC || !PC->IsLocalController()) return;
+
+	// Hide while a menu is open (mouse cursor showing) or the game is paused
+	const bool bMenuOpen = PC->bShowMouseCursor || PC->IsPaused();
+	AActor* Target = bMenuOpen ? nullptr : FindTarget();
+
+	FText Prompt;
+	if (Target)
+	{
+		Prompt = IInteractableInterface::Execute_GetInteractionPrompt(Target, GetOwner());
+	}
+
+	// Crosshair dot (created the first time we have a player controller)
+	if (bShowCrosshair)
+	{
+		if (!Crosshair)
+		{
+			Crosshair = CreateWidget<UCrosshairWidget>(PC, UCrosshairWidget::StaticClass());
+			if (Crosshair) Crosshair->AddToViewport(5);
+		}
+		if (Crosshair)
+		{
+			Crosshair->SetVisibility(bMenuOpen ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+			Crosshair->SetFocused(Target != nullptr && !Prompt.IsEmpty());
+		}
+	}
+
+	if (!PromptWidgetClass) return;
 
 	// Create the prompt the first time we have a player controller
 	if (!PromptWidget)
@@ -86,15 +125,6 @@ void UInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 		if (!PromptWidget) return;
 		PromptWidget->AddToViewport();
 		PromptWidget->SetVisibility(ESlateVisibility::Collapsed);
-	}
-
-	// Hide while a menu is open (mouse cursor showing)
-	AActor* Target = PC->bShowMouseCursor ? nullptr : FindTarget();
-
-	FText Prompt;
-	if (Target)
-	{
-		Prompt = IInteractableInterface::Execute_GetInteractionPrompt(Target, GetOwner());
 	}
 
 	if (Prompt.IsEmpty())
