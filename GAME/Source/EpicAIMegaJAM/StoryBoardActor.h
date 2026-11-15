@@ -77,6 +77,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Board")
 	FText InteractionText = FText::FromString(TEXT("Open storyboard"));
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Board")
+	FText NoLeadsText = FText::FromString(TEXT("You have no leads yet."));
+
 	// Camera blend in and out of the board
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Board")
 	float BlendTime = 0.8f;

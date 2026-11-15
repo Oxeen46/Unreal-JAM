@@ -17,6 +17,7 @@
 #include "InputCoreTypes.h"
 #include "TimerManager.h"
 #include "GameSettingsSubsystem.h"
+#include "SubtitleSubsystem.h"
 #include "Components/WidgetComponent.h"
 #include "NoteCardWidget.h"
 #include "Engine/Texture2D.h"
@@ -661,9 +662,9 @@ void AStoryBoardActor::Interact_Implementation(AActor* Interactor)
 
 	if (RevealedList().Num() == 0)
 	{
-		if (GEngine)
+		if (USubtitleSubsystem* Subtitles = USubtitleSubsystem::Get(this))
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::White, TEXT("You have no leads yet."));
+			Subtitles->ShowMessage(NoLeadsText, 3.f);
 		}
 		return;
 	}
