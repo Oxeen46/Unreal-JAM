@@ -16,6 +16,10 @@ struct FGameOptions
 
 	// 0 = no dimming effect on reality changes, 1 = full
 	UPROPERTY(BlueprintReadWrite) float RealityEffect = 1.f;
+
+	// Subtitles on/off and their size multiplier (used by SubtitleSubsystem)
+	UPROPERTY(BlueprintReadWrite) bool bSubtitles = true;
+	UPROPERTY(BlueprintReadWrite) float SubtitleScale = 1.f;
 };
 
 UCLASS()

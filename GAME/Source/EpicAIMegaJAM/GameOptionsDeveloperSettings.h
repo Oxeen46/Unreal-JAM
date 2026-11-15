@@ -5,6 +5,7 @@
 
 class USoundMix;
 class USoundClass;
+class USubtitleWidget;
 
 UCLASS(Config=Game, DefaultConfig, meta=(DisplayName="Game Options"))
 class EPICAIMEGAJAM_API UGameOptionsDeveloperSettings : public UDeveloperSettings
@@ -28,5 +29,8 @@ public:
 	// Sounds assigned to this Sound Class follow the SFX slider
 	UPROPERTY(EditAnywhere, Config, Category="Audio")
 	TSoftObjectPtr<USoundClass> SfxClass;
-	
+
+	// Widget Blueprint (child of USubtitleWidget) shown by the Subtitle Subsystem
+	UPROPERTY(EditAnywhere, Config, Category="Subtitles")
+	TSoftClassPtr<USubtitleWidget> SubtitleWidgetClass;
 };
