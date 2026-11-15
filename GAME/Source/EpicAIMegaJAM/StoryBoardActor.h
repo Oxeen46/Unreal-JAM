@@ -16,6 +16,8 @@ class UActorComponent;
 class UStoryBoardData;
 class UStoryStateSubsystem;
 class APlayerController;
+class UWidgetComponent;
+class UNoteCardWidget;
 
 USTRUCT()
 struct FBoardNote
@@ -65,6 +67,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void Interact_Implementation(AActor* Interactor) override;
 	virtual FText GetInteractionPrompt_Implementation(AActor* Interactor) const override;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Board")
+	TSubclassOf<UNoteCardWidget> NoteCardClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Board")
 	TObjectPtr<UStoryBoardData> Board;
@@ -166,6 +171,7 @@ private:
 	UPROPERTY() TArray<FBoardPanel> Panels;
 	UPROPERTY() TArray<FDimMesh> DimMeshes;
 	UPROPERTY() TArray<FDimText> DimTexts;
+	UPROPERTY() TArray<TObjectPtr<UWidgetComponent>> DimWidgets;
 
 	FTimerHandle ExitTimer;
 

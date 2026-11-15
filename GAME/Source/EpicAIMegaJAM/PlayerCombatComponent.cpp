@@ -11,6 +11,7 @@
 #include "Camera/PlayerCameraManager.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/GameInstance.h"
+#include "GameSettingsSubsystem.h"
 
 
 UPlayerCombatComponent::UPlayerCombatComponent()
@@ -51,6 +52,13 @@ void UPlayerCombatComponent::BeginPlay()
 				}
 			}
 		});
+	}
+	if (UGameInstance* GameInstance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+	{
+		if (UGameSettingsSubsystem* Settings = GameInstance->GetSubsystem<UGameSettingsSubsystem>())
+		{
+			Settings->ApplyAll();
+		}
 	}
 }
 

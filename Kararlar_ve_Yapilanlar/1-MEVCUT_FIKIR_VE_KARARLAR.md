@@ -34,7 +34,5 @@ Kabul edilen veya açıkça reddedilen seçenekler kaydedilir. Öneri/soru karar
 
 | Kimlik / tarih | Kararı kesinleştiren | Konu | Karar ve kabul / ret | Gerekçe | Etkilenen alan | Varsa yerine geçtiği kayıt |
 |---|---|---|---|---|---|---|
-| G-001 / 2026-11-12 | Safa — devir özeti | Oyunun teknik temeli | Kabul: UE 5.8.4 ve yalnız C++ programlama; Blueprint programlama/sistem kurulmayacak. Model, materyal, animasyon, harita ve ses içerikleri kullanılabilir. | Ayrıntılı gerekçe belirtilmedi. | Tüm oyun uygulaması | Eski Safa S-001 kaydı buraya taşındı. |
-| G-002 / 2026-11-12 | Safa — devir özeti | Film kapsamı | Kabul: nihai oyunda birkaç film olacak. Tek filmle başlama önerisi nihai kapsam sınırı değildir. | Ayrıntılı gerekçe belirtilmedi. | Oyun tasarımı ve içerik | Eski Safa S-002 kaydının kapsam kararı buraya taşındı. |
 
 Bildirilen tema **Director’s Cut**; resmî tema doğrulaması için JAM_RULES.md okunur. Senaryo oluşturma yöntemi henüz seçilmedi; karara bağlanmış gibi tabloya eklenmez.

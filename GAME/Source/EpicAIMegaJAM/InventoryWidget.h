@@ -9,6 +9,9 @@ class UInventoryRowWidget;
 class UVerticalBox;
 class UButton;
 class UTextBlock;
+class UImage;
+class UPanelWidget;
+class UTexture2D;
 
 UENUM()
 enum class EInventoryTab : uint8
@@ -40,7 +43,8 @@ protected:
 	UPROPERTY(meta=(BindWidget)) TObjectPtr<UButton> HealingTabButton;
 	UPROPERTY(meta=(BindWidget)) TObjectPtr<UButton> WeaponsTabButton;
 	UPROPERTY(meta=(BindWidget)) TObjectPtr<UButton> CloseButton;
-	UPROPERTY(meta=(BindWidget)) TObjectPtr<UVerticalBox> ItemList;
+	UPROPERTY(meta=(BindWidget)) TObjectPtr<UPanelWidget> ItemList;
+	UPROPERTY(meta=(BindWidgetOptional)) TObjectPtr<UImage> DetailIcon;
 	UPROPERTY(meta=(BindWidget)) TObjectPtr<UTextBlock> DetailTitle;
 	UPROPERTY(meta=(BindWidget)) TObjectPtr<UTextBlock> DetailBody;
 	UPROPERTY(meta=(BindWidget)) TObjectPtr<UButton> ActionButton;
@@ -59,6 +63,7 @@ private:
 		FText ActionLabel; // empty = no action button
 		bool bCanAct = false;
 	};
+	UTexture2D* EntryIcon(const FEntry& Entry) const;
 
 	UFUNCTION() void HandleNotesTab();
 	UFUNCTION() void HandleHealingTab();
