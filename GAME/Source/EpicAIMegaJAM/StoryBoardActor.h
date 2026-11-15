@@ -169,6 +169,9 @@ private:
 	UPROPERTY() TObjectPtr<UMaterialInstanceDynamic> BoardMID;
 	UPROPERTY() TObjectPtr<APlayerController> ActivePC;
 
+	// "Backspace - Leave" key icon shown while the player is looking at the board
+	UPROPERTY() TObjectPtr<class UKeyHintWidget> KeyHint;
+
 	UPROPERTY() TArray<TObjectPtr<UActorComponent>> BoardComponents;
 	UPROPERTY() TArray<FBoardNote> Notes;
 	UPROPERTY() TArray<FBoardPanel> Panels;

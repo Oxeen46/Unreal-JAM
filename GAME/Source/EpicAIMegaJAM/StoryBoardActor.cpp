@@ -1,5 +1,6 @@
 #include "StoryBoardActor.h"
 #include "GameAudio.h"
+#include "KeyHintWidget.h"
 #include "StoryBoardData.h"
 #include "StoryStateSubsystem.h"
 #include "Components/SceneComponent.h"
@@ -708,6 +709,18 @@ void AStoryBoardActor::EnterBoard(APlayerController* PC)
 	SetStatus(FText::GetEmpty(), Red);
 	HintText->SetHiddenInGame(false);
 
+	// the Backspace key icon in the corner of the screen
+	if (!KeyHint)
+	{
+		KeyHint = CreateWidget<UKeyHintWidget>(PC, UKeyHintWidget::StaticClass());
+		if (KeyHint)
+		{
+			KeyHint->SetTexts(FText::FromString(TEXT("← Backspace")), FText::FromString(TEXT("Leave")));
+			KeyHint->AddToViewport(10);
+			KeyHint->SetVisibility(ESlateVisibility::HitTestInvisible);
+		}
+	}
+
 	PC->DisableInput(PC);
 	PC->SetViewTargetWithBlend(this, BlendTime, VTBlend_Cubic);
 
@@ -738,6 +751,11 @@ void AStoryBoardActor::ExitBoard()
 	CurrentDim = 1.f;
 	HintText->SetHiddenInGame(true);
 	SetStatus(FText::GetEmpty(), Red);
+	if (KeyHint)
+	{
+		KeyHint->RemoveFromParent();
+		KeyHint = nullptr;
+	}
 
 	BuildBoard(); // back to the resting display, without the tray
 
