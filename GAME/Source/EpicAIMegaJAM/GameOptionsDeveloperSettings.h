@@ -28,4 +28,5 @@ public:
 	// Sounds assigned to this Sound Class follow the SFX slider
 	UPROPERTY(EditAnywhere, Config, Category="Audio")
 	TSoftObjectPtr<USoundClass> SfxClass;
+	
 };
