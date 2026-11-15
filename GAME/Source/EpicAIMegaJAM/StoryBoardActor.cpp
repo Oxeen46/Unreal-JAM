@@ -705,8 +705,7 @@ void AStoryBoardActor::EnterBoard(APlayerController* PC)
 	SetStatus(FText::GetEmpty(), Red);
 	HintText->SetHiddenInGame(false);
 
-	PC->SetIgnoreMoveInput(true);
-	PC->SetIgnoreLookInput(true);
+	PC->DisableInput(PC);
 	PC->SetViewTargetWithBlend(this, BlendTime, VTBlend_Cubic);
 
 	FInputModeGameAndUI Mode;
@@ -747,8 +746,7 @@ void AStoryBoardActor::FinishExit()
 {
 	if (ActivePC)
 	{
-		ActivePC->SetIgnoreMoveInput(false);
-		ActivePC->SetIgnoreLookInput(false);
+		ActivePC->EnableInput(ActivePC);
 		ActivePC->SetInputMode(FInputModeGameOnly());
 		ActivePC->SetShowMouseCursor(false);
 		ActivePC = nullptr;

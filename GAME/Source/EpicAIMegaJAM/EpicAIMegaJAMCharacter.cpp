@@ -38,6 +38,9 @@ AEpicAIMegaJAMCharacter::AEpicAIMegaJAMCharacter()
 	// configure the character comps
 	GetMesh()->SetOwnerNoSee(true);
 	GetMesh()->FirstPersonPrimitiveType = EFirstPersonPrimitiveType::WorldSpaceRepresentation;
+	GetMesh()->SetVisibility(false);
+
+	FirstPersonMesh->SetVisibility(false);
 
 	GetCapsuleComponent()->SetCapsuleSize(34.0f, 96.0f);
 
