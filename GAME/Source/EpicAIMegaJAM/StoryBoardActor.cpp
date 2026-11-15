@@ -1,4 +1,5 @@
 #include "StoryBoardActor.h"
+#include "GameAudio.h"
 #include "StoryBoardData.h"
 #include "StoryStateSubsystem.h"
 #include "Components/SceneComponent.h"
@@ -636,6 +637,7 @@ void AStoryBoardActor::StepSelection(int32 Direction)
 
 	const int32 Position = FMath::Max(0, Revealed.IndexOfByKey(Selected));
 	SelectStoryline(Revealed[(Position + Direction + Revealed.Num()) % Revealed.Num()], false);
+	GameAudio::BoardSwitched(this);
 }
 
 void AStoryBoardActor::SetOverview(bool bNewOverview)
@@ -989,6 +991,7 @@ void AStoryBoardActor::EndDrag()
 
 		if (Story->TryPlaceNote(Board, Selected, Best, Clue))
 		{
+			GameAudio::BoardNotePlaced(this);
 			if (!bWasUnlocked && Story->IsStorylineUnlocked(Board, Selected))
 			{
 				SetStatus(FText::FromString(FString::Printf(TEXT("Storyboard complete: %s"), *Board->Storylines[Selected].Title.ToString())), Green);

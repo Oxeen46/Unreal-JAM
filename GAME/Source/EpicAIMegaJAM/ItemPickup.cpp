@@ -1,4 +1,5 @@
 #include "ItemPickup.h"
+#include "GameAudio.h"
 #include "ItemData.h"
 #include "InventoryComponent.h"
 #include "StoryStateSubsystem.h"
@@ -69,6 +70,8 @@ void AItemPickup::Interact_Implementation(AActor* Interactor)
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green,
 			FString::Printf(TEXT("Picked up %s x%d"), *Item->DisplayName.ToString(), Added));
 	}
+
+	GameAudio::ItemPickedUp(this);
 
 	Count -= Added;
 	if (Count <= 0)

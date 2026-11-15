@@ -1,4 +1,5 @@
 #include "StoryTextureSwapActor.h"
+#include "GameAudio.h"
 #include "StoryStateSubsystem.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -6,7 +7,9 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInterface.h"
+#include "Sound/SoundBase.h"
 #include "TimerManager.h"
 
 AStoryTextureSwapActor::AStoryTextureSwapActor()
@@ -135,6 +138,16 @@ void AStoryTextureSwapActor::Refresh()
 {
 	const bool bNew = IsDecayed();
 	if (bNew == bDecayed && Entries.Num() > 0) return;
+	const bool bShifted = bNew && !bDecayed && bRefreshedOnce;
 	bDecayed = bNew;
+	bRefreshedOnce = true;
 	Apply();
+
+	if (bShifted)
+	{
+		for (USoundBase* Sound : DecaySounds)
+		{
+			GameAudio::PlaySfx2D(this, Sound);
+		}
+	}
 }

@@ -28,6 +28,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Reality")
 	TMap<TObjectPtr<UMaterialInterface>, TObjectPtr<UMaterialInterface>> ReplaceMaterials;
 
+	// Played (2D, together) the moment the scene turns old and scary, i.e. when the reality shifts.
+	// Not played when a save is loaded into an already decayed scene.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Reality")
+	TArray<TObjectPtr<class USoundBase>> DecaySounds;
+
 	// How often (seconds) newly streamed-in meshes are picked up while the decayed look is active
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Reality")
 	float RescanInterval = 2.f;
@@ -63,4 +68,5 @@ private:
 	TSet<TWeakObjectPtr<UStaticMeshComponent>> Known;
 	FTimerHandle RescanTimer;
 	bool bDecayed = false;
+	bool bRefreshedOnce = false;
 };
