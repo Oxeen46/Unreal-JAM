@@ -19,6 +19,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Clue")
 	TObjectPtr<UStaticMeshComponent> Mesh;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Clue")
+	TObjectPtr<UTexture2D> ClueIcon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Clue")
 	FGameplayTag ClueFact;

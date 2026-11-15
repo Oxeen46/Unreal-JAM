@@ -27,6 +27,7 @@ class EPICAIMEGAJAM_API UStoryStateSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	// ---- Facts (what the world reacts to) ----
 	UFUNCTION(BlueprintCallable, Category="Story")
 	void SetFact(FGameplayTag Fact, bool bValue);
@@ -37,9 +38,11 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Story")
 	FOnStoryFactChanged OnFactChanged;
 
-	// ---- Clues ----
 	UFUNCTION(BlueprintCallable, Category="Story")
-	void CollectClue(FGameplayTag Clue, const FText& Title, const FText& Text);
+	void CollectClue(FGameplayTag Clue, const FText& Title, const FText& Text, UTexture2D* Icon);
+
+	UFUNCTION(BlueprintPure, Category="Story")
+	UTexture2D* GetClueIcon(FGameplayTag Clue) const;
 
 	UFUNCTION(BlueprintPure, Category="Story")
 	bool HasClue(FGameplayTag Clue) const;
@@ -157,6 +160,7 @@ private:
 
 	UPROPERTY() FGameplayTagContainer Facts;
 	UPROPERTY() TArray<FGameplayTag> CollectedClues;
+	UPROPERTY() TMap<FGameplayTag, TSoftObjectPtr<UTexture2D>> ClueIcons;
 	UPROPERTY() TMap<FGameplayTag, FText> ClueTitles;
 	UPROPERTY() TMap<FGameplayTag, FText> ClueTexts;
 	UPROPERTY() TMap<FString, int32> StorylineProgress;   // "BoardPath#Index" -> notes placed

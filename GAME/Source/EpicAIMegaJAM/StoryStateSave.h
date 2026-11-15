@@ -11,6 +11,7 @@ class EPICAIMEGAJAM_API UStoryStateSave : public USaveGame
 
 public:
 	UPROPERTY() TArray<FGameplayTag> Facts;
+	UPROPERTY() TMap<FGameplayTag, TSoftObjectPtr<UTexture2D>> ClueIcons;
 	UPROPERTY() TArray<FGameplayTag> CollectedClues;
 	UPROPERTY() TMap<FGameplayTag, FText> ClueTitles;
 	UPROPERTY() TMap<FGameplayTag, FText> ClueTexts;
