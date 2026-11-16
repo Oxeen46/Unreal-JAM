@@ -29,6 +29,10 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category="Door")
 	void OnStateChanged(bool bUnlocked);
 	virtual void Interact_Implementation(AActor* Interactor) override;
+	virtual FText GetInteractionPrompt_Implementation(AActor* Interactor) const override;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Door")
+    FText InteractionText = FText::FromString(TEXT("Try the door"));
 
 protected:
 	virtual void BeginPlay() override;

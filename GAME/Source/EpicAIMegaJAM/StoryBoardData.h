@@ -5,21 +5,54 @@
 #include "StoryBoardData.generated.h"
 
 USTRUCT(BlueprintType)
-struct FStoryBoardSlot
+struct FStoryNote
 {
 	GENERATED_BODY()
 
-	// Identifies this slot, e.g. Story.Slot.Motive
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FGameplayTag SlotTag;
+	FGameplayTag Clue;
 
-	// The clue that belongs here
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FGameplayTag CorrectClue;
+	// Shown under the title while this is the latest clue you FOUND for the storyboard (not placed yet)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(MultiLine=true))
+	FText FoundDescription;
 
-	// Text shown on the board
+	// Shown while this is the last note you PLACED
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(MultiLine=true))
+	FText PlacedDescription;
+};
+
+USTRUCT(BlueprintType)
+struct FStoryline
+{
+	GENERATED_BODY()
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FText Label;
+	FText Title;
+
+	// The notes in story order. The first entry is note #1.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FStoryNote> Notes;
+
+	// Shown once the storyboard is complete
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(MultiLine=true))
+	FText CompletedDescription;
+
+	// Facts that become true while this is the active reality
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTagContainer ResultFacts;
+
+	// Visible on the board before any clue is found (leave off for most)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bRevealedFromStart = false;
+
+	int32 IndexOfClue(const FGameplayTag& Clue) const
+	{
+		for (int32 i = 0; i < Notes.Num(); ++i)
+		{
+			if (Notes[i].Clue == Clue) return i;
+		}
+		return INDEX_NONE;
+	}
 };
 
 UCLASS(BlueprintType)
@@ -32,9 +65,9 @@ public:
 	FText SceneTitle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<FStoryBoardSlot> Slots;
+	TArray<FStoryline> Storylines;
 
-	// Facts set to true when the board is committed correctly
+	// Clues that show up in the tray but belong to no storyline (red herrings)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FGameplayTagContainer ResultFacts;
+	TArray<FGameplayTag> DecoyClues;
 };

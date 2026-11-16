@@ -1,11 +1,12 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "PlayerCombatComponent.h"
+#include "InputAction.h"
 #include "EpicAIMegaJAMCharacter.generated.h"
+
 
 class UInputComponent;
 class USkeletalMeshComponent;
@@ -30,6 +31,8 @@ class AEpicAIMegaJAMCharacter : public ACharacter
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
+	
+
 
 protected:
 
@@ -49,6 +52,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category ="Input")
 	class UInputAction* MouseLookAction;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	UPlayerCombatComponent* CombatComponent = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input")
+	TObjectPtr<UInputAction> BlockAction;
+
+	void StartBlocking(const FInputActionValue& Value);
+	void StopBlocking(const FInputActionValue& Value);
 public:
 	AEpicAIMegaJAMCharacter();
 
