@@ -67,3 +67,7 @@ void AStoryDoor::Interact_Implementation(AActor* Interactor)
 	FString::Printf(TEXT("It's locked. Needs: %s"), *RequiredFact.ToString()));
 	}
 }
+FText AStoryDoor::GetInteractionPrompt_Implementation(AActor* Interactor) const
+{
+	return InteractionText;
+}
